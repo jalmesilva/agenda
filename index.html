@@ -1,341 +1,137 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Gestão de Turmas — 1.º Ciclo</title>
-<style>
-  :root { --b:#0b57d0; --bg:#f8fafc; }
-  body { font-family: Arial, sans-serif; margin: 20px; background: var(--bg); }
-  h1,h2,h3 { margin: 8px 0; }
-  input, button, select, textarea { margin: 6px 0; padding: 8px; border-radius: 10px; border: 1px solid #d0d7de; width: 100%; box-sizing: border-box; }
-  button { background: var(--b); color: #fff; border: none; cursor: pointer; }
-  button.secondary { background: #e11d48; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px; margin-top: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
-  #loginScreen { max-width: 360px; margin: 40px auto; }
-  #app { display: none; max-width: 980px; margin: 0 auto; }
-  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .list { list-style: none; padding: 0; margin: 0; }
-  .list li { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 8px; background: #fff; display: flex; justify-content: space-between; align-items: start; gap: 8px; }
-  .muted { color: #6b7280; font-size: 12px; }
-  .pill { background: #eef2ff; color:#3730a3; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
-  .actions { display: flex; gap: 8px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agenda Escolar - 1º Ciclo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    input, button, textarea { margin: 5px; padding: 6px; }
+    .card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-top: 15px; box-shadow: 1px 1px 4px rgba(0,0,0,0.1); }
+    h1, h3, h4 { color: #333; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 5px 0; padding: 5px; background: #f0f0f0; border-radius: 5px; }
+    .btnDel { margin-left: 10px; color: red; cursor: pointer; }
+  </style>
 </head>
 <body>
+  <h1>Agenda Escolar - Professores 1º Ciclo</h1>
 
-<!-- LOGIN -->
-<div id="loginScreen" class="card">
-  <h2>Login — Professores</h2>
-  <input id="email" type="email" placeholder="Email"/>
-  <input id="password" type="password" placeholder="Password"/>
-  <button id="btnLogin">Entrar</button>
-  <p id="loginError" style="color:#e11d48; display:none;">Credenciais inválidas ou sem permissão.</p>
-  <p class="muted">Acesso reservado. Os dados ficam guardados no Firestore e sincronizam entre dispositivos.</p>
-</div>
-
-<!-- APP -->
-<div id="app">
-  <div class="toolbar">
-    <h1>Gestão de Turmas — 1.º Ciclo</h1>
-    <div class="actions">
-      <span id="whoami" class="pill"></span>
-      <button id="btnLogout">Logout</button>
-    </div>
-  </div>
-
-  <!-- CRIAR TURMA -->
+  <!-- Criar Turma -->
   <div class="card">
-    <h2>Nova Turma</h2>
-    <div class="row">
-      <div>
-        <label>Nome da turma</label>
-        <input id="turmaNome" type="text" placeholder="Ex.: 4.º A"/>
-      </div>
-      <div>
-        <label>Ano letivo</label>
-        <input id="turmaAno" type="text" placeholder="Ex.: 2024/2025"/>
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>Nº de alunos</label>
-        <input id="turmaAlunos" type="number" min="1" placeholder="Ex.: 22"/>
-      </div>
-      <div>
-        <label>Professor responsável</label>
-        <input id="turmaProfessor" type="email" placeholder="Email do professor" />
-      </div>
-    </div>
+    <h3>Criar Nova Turma</h3>
+    <input type="text" id="nomeTurma" placeholder="Nome da turma"><br>
+    <input type="text" id="anoLetivo" placeholder="Ano letivo"><br>
     <button id="btnCriarTurma">Criar Turma</button>
-    <p class="muted">Dica: usa sempre o mesmo nome de turma para a equipa partilhar dados.</p>
   </div>
 
-  <!-- SELECIONAR / ELIMINAR TURMA -->
+  <!-- Lista de Turmas -->
   <div class="card">
-    <div class="row">
-      <div>
-        <label>Selecionar turma</label>
-        <select id="listaTurmas"></select>
-      </div>
-      <div style="display:flex; align-items:end;">
-        <button id="btnEliminarTurma" class="secondary">Eliminar Turma</button>
-      </div>
-    </div>
+    <h3>Turmas</h3>
+    <ul id="listaTurmas"></ul>
   </div>
 
-  <!-- DADOS DA TURMA -->
-  <div id="boxTurma" class="card" style="display:none;">
+  <!-- Área da Turma Ativa -->
+  <div id="turmaAtiva" class="card" style="display:none;">
     <h3 id="tituloTurma"></h3>
-    <p class="muted">Ano: <span id="infoAno"></span> • Alunos: <span id="infoAlunos"></span> • Professor: <span id="infoProfessor"></span></p>
-
-    <!-- NOVA PLANIFICAÇÃO -->
-    <div class="card" style="margin-top: 10px;">
-      <h3>Nova Planificação</h3>
-      <div class="row">
-        <div>
-          <label>Data início</label>
-          <input id="planInicio" type="date"/>
-        </div>
-        <div>
-          <label>Data fim</label>
-          <input id="planFim" type="date"/>
-        </div>
-      </div>
-      <div>
-        <label>Tema</label>
-        <input id="planTema" type="text" placeholder="Ex.: Frações — Matemática"/>
-      </div>
-      <div>
-        <label>Objetivos</label>
-        <textarea id="planObjetivos" rows="4" placeholder="Ex.: identificar frações próprias, comparar frações, resolver problemas simples..."></textarea>
-      </div>
-      <button id="btnAdicionarPlan">Adicionar Planificação</button>
-    </div>
-
-    <!-- LISTA DE PLANIFICAÇÕES -->
-    <div class="card" style="margin-top: 10px;">
-      <h3>Planificações</h3>
-      <ul id="listaPlanificacoes" class="list"></ul>
-      <p id="vazioPlan" class="muted" style="display:none;">Sem planificações ainda.</p>
-    </div>
+    <h4>Planificações</h4>
+    <textarea id="descricaoPlan" placeholder="Descrição da planificação"></textarea><br>
+    <button id="btnAdicionarPlan">Adicionar Planificação</button>
+    <ul id="listaPlans"></ul>
   </div>
-</div>
 
-<script type="module">
-  // Firebase (CDN módulos)
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+  <script>
+    let turmaSelecionada = null;
 
-  // 🔧 Substitui por **a tua** config (a mesma do projeto bddespesas)
-  const firebaseConfig = {
-    apiKey: "AIzaSyAC9EguGeZd50W1jADEx73aJKGacFeGk9o",
-    authDomain: "bddespesas.firebaseapp.com",
-    projectId: "bddespesas",
-    storageBucket: "bddespesas.firebasestorage.app",
-    messagingSenderId: "521648200265",
-    appId: "1:521648200265:web:82fc2c97f02e185478fd98"
-  };
+    function carregarTurmas() {
+      const lista = document.getElementById("listaTurmas");
+      lista.innerHTML = "";
+      const turmas = JSON.parse(localStorage.getItem("turmas") || "[]");
 
-  // Init
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
+      turmas.forEach((turma, index) => {
+        const li = document.createElement("li");
+        li.textContent = `${turma.nome} (${turma.ano})`;
 
-  // Estado
-  let utilizador = null;
-  let turmaAtivaId = null;
+        const btnAbrir = document.createElement("button");
+        btnAbrir.textContent = "Abrir";
+        btnAbrir.style.marginLeft = "10px";
+        btnAbrir.onclick = () => abrirTurma(index);
 
-  // --- LOGIN ---
-  document.getElementById("btnLogin").addEventListener("click", async () => {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      document.getElementById("loginError").style.display = "none";
-    } catch (e) {
-      console.error(e);
-      document.getElementById("loginError").style.display = "block";
-    }
-  });
+        const btnDel = document.createElement("button");
+        btnDel.textContent = "X";
+        btnDel.className = "btnDel";
+        btnDel.onclick = () => {
+          turmas.splice(index, 1);
+          localStorage.setItem("turmas", JSON.stringify(turmas));
+          carregarTurmas();
+          document.getElementById("turmaAtiva").style.display = "none";
+        };
 
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      utilizador = user;
-      document.getElementById("whoami").textContent = utilizador.email;
-      document.getElementById("loginScreen").style.display = "none";
-      document.getElementById("app").style.display = "block";
-      await carregarTurmas();
-    } else {
-      utilizador = null;
-      turmaAtivaId = null;
-      document.getElementById("app").style.display = "none";
-      document.getElementById("loginScreen").style.display = "block";
-    }
-  });
-
-  // --- LOGOUT ---
-  document.getElementById("btnLogout").addEventListener("click", async () => {
-    await signOut(auth);
-  });
-
-  // --- CRIAR TURMA ---
-  document.getElementById("btnCriarTurma").addEventListener("click", async () => {
-    const nome = document.getElementById("turmaNome").value.trim();
-    const ano  = document.getElementById("turmaAno").value.trim();
-    const alunos = parseInt(document.getElementById("turmaAlunos").value);
-    const prof = document.getElementById("turmaProfessor").value.trim() || (utilizador ? utilizador.email : "");
-
-    if (!nome || !ano || !alunos || !prof) return alert("Preenche todos os campos da turma.");
-    // ID de documento = nome (opção simples para partilha por nome)
-    const turmaRef = doc(db, "turmas", nome);
-    const snap = await getDoc(turmaRef);
-    if (snap.exists()) return alert("Já existe uma turma com esse nome.");
-
-    await setDoc(turmaRef, { nome, ano, alunos, professor: prof, criadoPor: utilizador.email, criadoEm: new Date().toISOString() });
-
-    // Limpar inputs
-    document.getElementById("turmaNome").value = "";
-    document.getElementById("turmaAno").value = "";
-    document.getElementById("turmaAlunos").value = "";
-    document.getElementById("turmaProfessor").value = "";
-
-    await carregarTurmas();
-    alert("Turma criada com sucesso!");
-  });
-
-  // --- CARREGAR TURMAS ---
-  async function carregarTurmas() {
-    const lista = document.getElementById("listaTurmas");
-    lista.innerHTML = "";
-    const col = collection(db, "turmas");
-    const docsSnap = await getDocs(col);
-    if (docsSnap.empty) {
-      document.getElementById("boxTurma").style.display = "none";
-      return;
-    }
-    docsSnap.forEach(d => {
-      const opt = document.createElement("option");
-      opt.value = d.id;
-      opt.textContent = d.id; // mostra o nome (id)
-      lista.appendChild(opt);
-    });
-
-    // Seleciona a primeira por defeito
-    turmaAtivaId = lista.value = lista.options[0].value;
-    await mostrarTurma();
-  }
-
-  // Selecionar turma
-  document.getElementById("listaTurmas").addEventListener("change", async (e) => {
-    turmaAtivaId = e.target.value;
-    await mostrarTurma();
-  });
-
-  // --- MOSTRAR TURMA + PLANIFICAÇÕES ---
-  async function mostrarTurma() {
-    if (!turmaAtivaId) return;
-
-    const turmaRef = doc(db, "turmas", turmaAtivaId);
-    const turmaSnap = await getDoc(turmaRef);
-    if (!turmaSnap.exists()) return;
-
-    const turma = turmaSnap.data();
-    document.getElementById("boxTurma").style.display = "block";
-    document.getElementById("tituloTurma").textContent = turma.nome;
-    document.getElementById("infoAno").textContent = turma.ano;
-    document.getElementById("infoAlunos").textContent = turma.alunos;
-    document.getElementById("infoProfessor").textContent = turma.professor;
-
-    // Carregar planificações (ordenadas por dataInicio se existir)
-    const lista = document.getElementById("listaPlanificacoes");
-    lista.innerHTML = "";
-    document.getElementById("vazioPlan").style.display = "none";
-
-    const plansCol = collection(db, "turmas", turmaAtivaId, "planificacoes");
-    // nota: como guardamos YYYY-MM-DD string, ordenar alfabético funciona por data
-    const q = query(plansCol, orderBy("dataInicio"));
-    const plansSnap = await getDocs(q);
-
-    if (plansSnap.empty) {
-      document.getElementById("vazioPlan").style.display = "block";
-    }
-
-    plansSnap.forEach(p => {
-      const plan = p.data();
-      const li = document.createElement("li");
-      const left = document.createElement("div");
-      left.innerHTML = `
-        <div><strong>${plan.tema || "(Sem tema)"}</strong></div>
-        <div class="muted">${plan.dataInicio || "?"} → ${plan.dataFim || "?"}</div>
-        <div style="white-space: pre-wrap; margin-top:6px;">${plan.objetivos || ""}</div>
-      `;
-      const right = document.createElement("div");
-      right.className = "actions";
-      const btnDel = document.createElement("button");
-      btnDel.className = "secondary";
-      btnDel.textContent = "Eliminar";
-      btnDel.addEventListener("click", async () => {
-        if (!confirm("Eliminar esta planificação?")) return;
-        await deleteDoc(doc(db, "turmas", turmaAtivaId, "planificacoes", p.id));
-        await mostrarTurma();
+        li.appendChild(btnAbrir);
+        li.appendChild(btnDel);
+        lista.appendChild(li);
       });
-      right.appendChild(btnDel);
-      li.appendChild(left);
-      li.appendChild(right);
-      lista.appendChild(li);
+    }
+
+    function abrirTurma(index) {
+      const turmas = JSON.parse(localStorage.getItem("turmas") || "[]");
+      turmaSelecionada = index;
+      const turma = turmas[index];
+      document.getElementById("tituloTurma").textContent = `${turma.nome} (${turma.ano})`;
+      document.getElementById("turmaAtiva").style.display = "block";
+      carregarPlanificacoes();
+    }
+
+    function carregarPlanificacoes() {
+      const turmas = JSON.parse(localStorage.getItem("turmas") || "[]");
+      const turma = turmas[turmaSelecionada];
+      const lista = document.getElementById("listaPlans");
+      lista.innerHTML = "";
+
+      (turma.planificacoes || []).forEach((plan, i) => {
+        const li = document.createElement("li");
+        li.textContent = plan;
+        const btnDel = document.createElement("button");
+        btnDel.textContent = "X";
+        btnDel.className = "btnDel";
+        btnDel.onclick = () => {
+          turma.planificacoes.splice(i, 1);
+          turmas[turmaSelecionada] = turma;
+          localStorage.setItem("turmas", JSON.stringify(turmas));
+          carregarPlanificacoes();
+        };
+        li.appendChild(btnDel);
+        lista.appendChild(li);
+      });
+    }
+
+    document.getElementById("btnCriarTurma").addEventListener("click", () => {
+      const nome = document.getElementById("nomeTurma").value.trim();
+      const ano = document.getElementById("anoLetivo").value.trim();
+      if (!nome || !ano) {
+        alert("Preencha todos os campos.");
+        return;
+      }
+      const turmas = JSON.parse(localStorage.getItem("turmas") || "[]");
+      turmas.push({ nome, ano, planificacoes: [] });
+      localStorage.setItem("turmas", JSON.stringify(turmas));
+      document.getElementById("nomeTurma").value = "";
+      document.getElementById("anoLetivo").value = "";
+      carregarTurmas();
     });
-  }
 
-  // --- ADICIONAR PLANIFICAÇÃO ---
-  document.getElementById("btnAdicionarPlan").addEventListener("click", async () => {
-    if (!turmaAtivaId) return alert("Seleciona uma turma.");
-
-    const dataInicio = document.getElementById("planInicio").value;
-    const dataFim = document.getElementById("planFim").value;
-    const tema = document.getElementById("planTema").value.trim();
-    const objetivos = document.getElementById("planObjetivos").value.trim();
-
-    if (!dataInicio || !dataFim || !tema) return alert("Preenche pelo menos data de início, data de fim e tema.");
-    if (new Date(dataFim) < new Date(dataInicio)) return alert("Data fim deve ser após data início.");
-
-    const plansCol = collection(db, "turmas", turmaAtivaId, "planificacoes");
-    await addDoc(plansCol, {
-      dataInicio, dataFim, tema, objetivos,
-      criadoPor: utilizador ? utilizador.email : "",
-      criadoEm: new Date().toISOString()
+    document.getElementById("btnAdicionarPlan").addEventListener("click", () => {
+      const descricao = document.getElementById("descricaoPlan").value.trim();
+      if (!descricao) return;
+      const turmas = JSON.parse(localStorage.getItem("turmas") || "[]");
+      turmas[turmaSelecionada].planificacoes.push(descricao);
+      localStorage.setItem("turmas", JSON.stringify(turmas));
+      document.getElementById("descricaoPlan").value = "";
+      carregarPlanificacoes();
     });
 
-    // limpar inputs
-    document.getElementById("planInicio").value = "";
-    document.getElementById("planFim").value = "";
-    document.getElementById("planTema").value = "";
-    document.getElementById("planObjetivos").value = "";
-
-    await mostrarTurma();
-  });
-
-  // --- ELIMINAR TURMA ---
-  document.getElementById("btnEliminarTurma").addEventListener("click", async () => {
-    if (!turmaAtivaId) return;
-    if (!confirm(`Eliminar a turma "${turmaAtivaId}" e TODAS as suas planificações?`)) return;
-
-    // apagar subcoleção (planificações) primeiro
-    const plansCol = collection(db, "turmas", turmaAtivaId, "planificacoes");
-    const plansSnap = await getDocs(plansCol);
-    const deletions = [];
-    plansSnap.forEach(p => deletions.push(deleteDoc(doc(db, "turmas", turmaAtivaId, "planificacoes", p.id))));
-    await Promise.all(deletions);
-
-    // apagar documento da turma
-    await deleteDoc(doc(db, "turmas", turmaAtivaId));
-
-    turmaAtivaId = null;
-    document.getElementById("boxTurma").style.display = "none";
-    await carregarTurmas();
-  });
-</script>
+    // inicializar
+    carregarTurmas();
+  </script>
 </body>
 </html>
