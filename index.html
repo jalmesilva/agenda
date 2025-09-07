@@ -39,6 +39,32 @@
             font-weight: 300;
         }
 
+        /* Login Screen */
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .login-container h2 {
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+
+        .user-info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .controls {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -113,6 +139,10 @@
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%) !important;
         }
 
+        .btn-success {
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%) !important;
+        }
+
         .view-controls {
             display: flex;
             gap: 10px;
@@ -166,10 +196,9 @@
             background: #667eea !important;
             color: white !important;
             font-weight: 600;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
             width: 80px;
-            font-size: 10px;
+            font-size: 12px;
+            padding: 10px 5px;
         }
 
         .content-cell {
@@ -252,6 +281,29 @@
             margin: 0;
         }
 
+        /* Date Picker Style */
+        .date-range-picker {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .date-input {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .semana-preview {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: 600;
+            color: #667eea;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -281,14 +333,46 @@
             .content-cell textarea {
                 font-size: 9px;
             }
+
+            .date-range-picker {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="container">
         <div class="header">
             <h1>Planificação Semanal</h1>
             <p>Sistema de Planificação para Professores do 1º Ciclo</p>
+        </div>
+        
+        <div class="login-container">
+            <h2>🔐 Entrar na Plataforma</h2>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="loginEmail" placeholder="seu.email@exemplo.com">
+            </div>
+            <div class="form-group">
+                <label>Palavra-passe:</label>
+                <input type="password" id="loginPassword" placeholder="Sua palavra-passe">
+            </div>
+            <button id="btnLogin">Entrar</button>
+            <hr style="margin: 20px 0;">
+            <button id="btnRegister" class="btn-secondary">Criar Nova Conta</button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="container" style="display: none;">
+        <div class="header">
+            <h1>Planificação Semanal</h1>
+            <p>Sistema de Planificação para Professores do 1º Ciclo</p>
+            <div class="user-info">
+                <span id="userEmail"></span>
+                <button id="btnLogout" class="btn-danger" style="width: auto; padding: 8px 16px;">Sair</button>
+            </div>
         </div>
 
         <div class="controls">
@@ -318,12 +402,30 @@
 
             <!-- Definir Semana -->
             <div class="card" id="cardSemana" style="display: none;">
-                <h3>📅 Definir Semana</h3>
-                <div class="form-group">
-                    <label>Descrição da Semana:</label>
-                    <input type="text" id="descricaoSemana" placeholder="Ex: 8 a 12 de setembro">
+                <h3>📅 Reservar Nova Semana</h3>
+                
+                <div class="date-range-picker">
+                    <div class="date-input">
+                        <label>Data de Início:</label>
+                        <input type="date" id="dataInicio">
+                    </div>
+                    <div class="date-input">
+                        <label>Data de Fim:</label>
+                        <input type="date" id="dataFim">
+                    </div>
                 </div>
-                <button id="btnCriarSemana">Criar Semana</button>
+
+                <div class="form-group">
+                    <label>Descrição (opcional):</label>
+                    <input type="text" id="descricaoCustom" placeholder="Ex: Semana de avaliações">
+                </div>
+
+                <div id="semanaPreview" class="semana-preview" style="display: none;"></div>
+
+                <button id="btnCriarSemana" class="btn-success" disabled>Reservar Esta Semana</button>
+                
+                <hr style="margin: 20px 0;">
+                <h4 style="color: #667eea; margin-bottom: 15px;">📋 Semanas Reservadas</h4>
                 <ul id="listaSemanas" class="semana-list"></ul>
             </div>
         </div>
@@ -442,17 +544,153 @@
         </div>
     </div>
 
-    <script>
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAC9EguGeZd50W1jADEx73aJKGacFeGk9o",
+            authDomain: "bddespesas.firebaseapp.com",
+            projectId: "bddespesas",
+            storageBucket: "bddespesas.firebasestorage.app",
+            messagingSenderId: "521648200265",
+            appId: "1:521648200265:web:82fc2c97f02e185478fd98",
+            measurementId: "G-P7NX1T9RVE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
         let turmaAtiva = null;
         let semanaAtiva = null;
 
-        // Carregar dados ao iniciar
-        window.onload = function() {
-            carregarTurmas();
-        };
+        // Auth State Observer
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('userEmail').textContent = user.email;
+                carregarTurmas();
+            } else {
+                currentUser = null;
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('mainApp').style.display = 'none';
+            }
+        });
+
+        // Login
+        document.getElementById('btnLogin').addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (!email || !password) {
+                alert('Preencha email e palavra-passe');
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                alert('Erro no login: ' + error.message);
+            }
+        });
+
+        // Register
+        document.getElementById('btnRegister').addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (!email || !password) {
+                alert('Preencha email e palavra-passe');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('A palavra-passe deve ter pelo menos 6 caracteres');
+                return;
+            }
+
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                alert('Conta criada com sucesso!');
+            } catch (error) {
+                alert('Erro ao criar conta: ' + error.message);
+            }
+        });
+
+        // Logout
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                alert('Erro ao sair: ' + error.message);
+            }
+        });
+
+        // Make functions available globally
+        window.carregarTurmas = carregarTurmas;
+        window.selecionarTurma = selecionarTurma;
+        window.eliminarTurma = eliminarTurma;
+        window.abrirPlanificacao = abrirPlanificacao;
+        window.eliminarSemana = eliminarSemana;
+        window.salvarPlanificacao = salvarPlanificacao;
+        window.mostrarSemanaCompleta = mostrarSemanaCompleta;
+        window.mostrarDia = mostrarDia;
+
+        // Date picker functionality
+        const dataInicio = document.getElementById('dataInicio');
+        const dataFim = document.getElementById('dataFim');
+        const semanaPreview = document.getElementById('semanaPreview');
+        const btnCriarSemana = document.getElementById('btnCriarSemana');
+
+        function updateSemanaPreview() {
+            const inicio = new Date(dataInicio.value);
+            const fim = new Date(dataFim.value);
+
+            if (!dataInicio.value || !dataFim.value) {
+                semanaPreview.style.display = 'none';
+                btnCriarSemana.disabled = true;
+                return;
+            }
+
+            if (fim < inicio) {
+                semanaPreview.innerHTML = '❌ Data de fim deve ser posterior à data de início';
+                semanaPreview.style.display = 'block';
+                btnCriarSemana.disabled = true;
+                return;
+            }
+
+            const diffTime = Math.abs(fim - inicio);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+            const inicioFormatted = inicio.toLocaleDateString('pt-PT');
+            const fimFormatted = fim.toLocaleDateString('pt-PT');
+
+            semanaPreview.innerHTML = `📅 Semana de ${inicioFormatted} a ${fimFormatted} (${diffDays} dias)`;
+            semanaPreview.style.display = 'block';
+            btnCriarSemana.disabled = false;
+        }
+
+        dataInicio.addEventListener('change', updateSemanaPreview);
+        dataFim.addEventListener('change', updateSemanaPreview);
+
+        // Auto-set fim date when inicio is selected (add 4 days for school week)
+        dataInicio.addEventListener('change', () => {
+            if (dataInicio.value && !dataFim.value) {
+                const inicio = new Date(dataInicio.value);
+                inicio.setDate(inicio.getDate() + 4); // Add 4 days for Mon-Fri
+                dataFim.value = inicio.toISOString().split('T')[0];
+                updateSemanaPreview();
+            }
+        });
 
         // Criar turma
-        document.getElementById('btnCriarTurma').addEventListener('click', function() {
+        document.getElementById('btnCriarTurma').addEventListener('click', async () => {
             const nome = document.getElementById('nomeTurma').value.trim();
             const ano = document.getElementById('anoLetivo').value.trim();
             const professor = document.getElementById('nomeProfessor').value.trim();
@@ -462,296 +700,100 @@
                 return;
             }
 
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            const novaTurma = {
-                id: Date.now(),
-                nome,
-                ano,
-                professor,
-                semanas: []
-            };
+            try {
+                const turmaId = Date.now().toString();
+                await setDoc(doc(db, 'turmas', turmaId), {
+                    id: turmaId,
+                    nome,
+                    ano,
+                    professor,
+                    userId: currentUser.uid,
+                    createdAt: new Date()
+                });
 
-            turmas.push(novaTurma);
-            localStorage.setItem('turmas', JSON.stringify(turmas));
+                // Limpar campos
+                document.getElementById('nomeTurma').value = '';
+                document.getElementById('anoLetivo').value = '';
+                document.getElementById('nomeProfessor').value = '';
 
-            // Limpar campos
-            document.getElementById('nomeTurma').value = '';
-            document.getElementById('anoLetivo').value = '';
-            document.getElementById('nomeProfessor').value = '';
-
-            carregarTurmas();
-            alert('Turma criada com sucesso!');
+                carregarTurmas();
+                alert('Turma criada com sucesso!');
+            } catch (error) {
+                alert('Erro ao criar turma: ' + error.message);
+            }
         });
 
         // Carregar lista de turmas
-        function carregarTurmas() {
+        async function carregarTurmas() {
+            if (!currentUser) return;
+
             const lista = document.getElementById('listaTurmas');
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            
+            try {
+                const q = query(collection(db, 'turmas'), where('userId', '==', currentUser.uid));
+                const querySnapshot = await getDocs(q);
+                const turmas = [];
+                
+                querySnapshot.forEach((doc) => {
+                    turmas.push({ id: doc.id, ...doc.data() });
+                });
 
-            lista.innerHTML = '';
+                lista.innerHTML = '';
 
-            if (turmas.length === 0) {
-                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma turma criada</li>';
-                return;
+                if (turmas.length === 0) {
+                    lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma turma criada</li>';
+                    return;
+                }
+
+                turmas.forEach((turma, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'turma-item';
+                    li.innerHTML = `
+                        <div class="turma-info">
+                            <strong>${turma.nome}</strong><br>
+                            <small>${turma.ano} • ${turma.professor}</small>
+                        </div>
+                        <div class="turma-actions">
+                            <button onclick="selecionarTurma('${turma.id}')" class="btn-secondary">Selecionar</button>
+                            <button onclick="eliminarTurma('${turma.id}')" class="btn-danger">Eliminar</button>
+                        </div>
+                    `;
+                    lista.appendChild(li);
+                });
+
+                // Store turmas globally for access
+                window.turmasData = turmas;
+            } catch (error) {
+                console.error('Erro ao carregar turmas:', error);
+                alert('Erro ao carregar turmas');
             }
-
-            turmas.forEach((turma, index) => {
-                const li = document.createElement('li');
-                li.className = 'turma-item';
-                li.innerHTML = `
-                    <div class="turma-info">
-                        <strong>${turma.nome}</strong><br>
-                        <small>${turma.ano} • ${turma.professor}</small>
-                    </div>
-                    <div class="turma-actions">
-                        <button onclick="selecionarTurma(${index})" class="btn-secondary">Selecionar</button>
-                        <button onclick="eliminarTurma(${index})" class="btn-danger">Eliminar</button>
-                    </div>
-                `;
-                lista.appendChild(li);
-            });
         }
 
         // Selecionar turma
-        function selecionarTurma(index) {
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            turmaAtiva = index;
-            
+        async function selecionarTurma(turmaId) {
+            turmaAtiva = turmaId;
             document.getElementById('cardSemana').style.display = 'block';
-            carregarSemanas();
+            await carregarSemanas();
             
-            alert(`Turma "${turmas[index].nome}" selecionada!`);
+            const turma = window.turmasData.find(t => t.id === turmaId);
+            alert(`Turma "${turma.nome}" selecionada!`);
         }
 
         // Eliminar turma
-        function eliminarTurma(index) {
+        async function eliminarTurma(turmaId) {
             if (!confirm('Tem a certeza que deseja eliminar esta turma? Esta ação não pode ser desfeita.')) {
                 return;
             }
 
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            turmas.splice(index, 1);
-            localStorage.setItem('turmas', JSON.stringify(turmas));
-
-            carregarTurmas();
-            
-            // Reset se a turma ativa foi eliminada
-            if (turmaAtiva === index) {
-                turmaAtiva = null;
-                semanaAtiva = null;
-                document.getElementById('cardSemana').style.display = 'none';
-                document.getElementById('areaPlanificacao').style.display = 'none';
-            }
-        }
-
-        // Criar semana
-        document.getElementById('btnCriarSemana').addEventListener('click', function() {
-            if (turmaAtiva === null) {
-                alert('Selecione uma turma primeiro.');
-                return;
-            }
-
-            const descricao = document.getElementById('descricaoSemana').value.trim();
-            if (!descricao) {
-                alert('Digite a descrição da semana.');
-                return;
-            }
-
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            const novaSemana = {
-                id: Date.now(),
-                descricao,
-                planificacao: {}
-            };
-
-            if (!turmas[turmaAtiva].semanas) {
-                turmas[turmaAtiva].semanas = [];
-            }
-
-            turmas[turmaAtiva].semanas.push(novaSemana);
-            localStorage.setItem('turmas', JSON.stringify(turmas));
-
-            document.getElementById('descricaoSemana').value = '';
-            carregarSemanas();
-            alert('Semana criada com sucesso!');
-        });
-
-        // Carregar semanas
-        function carregarSemanas() {
-            const lista = document.getElementById('listaSemanas');
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-
-            if (turmaAtiva === null || !turmas[turmaAtiva].semanas) {
-                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma semana criada</li>';
-                return;
-            }
-
-            const semanas = turmas[turmaAtiva].semanas;
-            lista.innerHTML = '';
-
-            if (semanas.length === 0) {
-                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma semana criada</li>';
-                return;
-            }
-
-            semanas.forEach((semana, index) => {
-                const li = document.createElement('li');
-                li.className = 'semana-item';
-                li.innerHTML = `
-                    <div>
-                        <strong>${semana.descricao}</strong>
-                    </div>
-                    <div class="semana-actions">
-                        <button onclick="abrirPlanificacao(${index})" class="btn-secondary">Abrir</button>
-                        <button onclick="eliminarSemana(${index})" class="btn-danger">Eliminar</button>
-                    </div>
-                `;
-                lista.appendChild(li);
-            });
-        }
-
-        // Abrir planificação
-        function abrirPlanificacao(indexSemana) {
-            if (turmaAtiva === null) return;
-
-            semanaAtiva = indexSemana;
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            const turma = turmas[turmaAtiva];
-            const semana = turma.semanas[indexSemana];
-
-            document.getElementById('tituloAtual').textContent = `Planificação: ${semana.descricao}`;
-            document.getElementById('infoAtual').textContent = `${turma.nome} • ${turma.ano} • ${turma.professor}`;
-            document.getElementById('cabecalhoPlanificacao').textContent = `${turma.nome} | ${turma.ano} | ${turma.professor} | SEMANA: ${semana.descricao}`;
-
-            // Carregar dados salvos
-            carregarDadosPlanificacao();
-
-            document.getElementById('areaPlanificacao').style.display = 'block';
-            mostrarSemanaCompleta();
-
-            // Scroll para a planificação
-            document.getElementById('areaPlanificacao').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Eliminar semana
-        function eliminarSemana(index) {
-            if (!confirm('Tem a certeza que deseja eliminar esta semana? Esta ação não pode ser desfeita.')) {
-                return;
-            }
-
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            turmas[turmaAtiva].semanas.splice(index, 1);
-            localStorage.setItem('turmas', JSON.stringify(turmas));
-
-            carregarSemanas();
-
-            // Reset se a semana ativa foi eliminada
-            if (semanaAtiva === index) {
-                semanaAtiva = null;
-                document.getElementById('areaPlanificacao').style.display = 'none';
-            }
-        }
-
-        // Carregar dados da planificação
-        function carregarDadosPlanificacao() {
-            if (turmaAtiva === null || semanaAtiva === null) return;
-
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            const planificacao = turmas[turmaAtiva].semanas[semanaAtiva].planificacao;
-
-            // Carregar dados em cada textarea
-            const textareas = document.querySelectorAll('.content-cell textarea');
-            textareas.forEach(textarea => {
-                const cell = textarea.closest('.content-cell');
-                const day = cell.getAttribute('data-day');
-                const time = cell.getAttribute('data-time');
-                const key = `${day}-${time}`;
+            try {
+                await deleteDoc(doc(db, 'turmas', turmaId));
+                carregarTurmas();
                 
-                if (planificacao[key]) {
-                    textarea.value = planificacao[key];
+                if (turmaAtiva === turmaId) {
+                    turmaAtiva = null;
+                    semanaAtiva = null;
+                    document.getElementById('cardSemana').style.display = 'none';
+                    document.getElementById('areaPlanificacao').style.display = 'none';
                 }
-            });
-        }
-
-        // Salvar planificação
-        function salvarPlanificacao() {
-            if (turmaAtiva === null || semanaAtiva === null) {
-                alert('Selecione uma turma e semana primeiro.');
-                return;
-            }
-
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            const planificacao = {};
-
-            // Recolher dados de cada textarea
-            const textareas = document.querySelectorAll('.content-cell textarea');
-            textareas.forEach(textarea => {
-                const cell = textarea.closest('.content-cell');
-                const day = cell.getAttribute('data-day');
-                const time = cell.getAttribute('data-time');
-                const key = `${day}-${time}`;
                 
-                planificacao[key] = textarea.value;
-            });
-
-            turmas[turmaAtiva].semanas[semanaAtiva].planificacao = planificacao;
-            localStorage.setItem('turmas', JSON.stringify(turmas));
-
-            alert('Planificação guardada com sucesso!');
-        }
-
-        // Mostrar semana completa
-        function mostrarSemanaCompleta() {
-            const headers = document.querySelectorAll('.day-header');
-            const cells = document.querySelectorAll('.day-cell');
-
-            headers.forEach(header => {
-                header.classList.remove('hidden');
-                header.classList.remove('active-day');
-            });
-
-            cells.forEach(cell => {
-                cell.classList.remove('hidden');
-                cell.classList.remove('active-day');
-            });
-        }
-
-        // Mostrar apenas um dia
-        function mostrarDia(dia) {
-            const headers = document.querySelectorAll('.day-header');
-            const cells = document.querySelectorAll('.day-cell');
-
-            headers.forEach(header => {
-                if (header.getAttribute('data-day') === dia) {
-                    header.classList.remove('hidden');
-                    header.classList.add('active-day');
-                } else {
-                    header.classList.add('hidden');
-                    header.classList.remove('active-day');
-                }
-            });
-
-            cells.forEach(cell => {
-                if (cell.getAttribute('data-day') === dia) {
-                    cell.classList.remove('hidden');
-                    cell.classList.add('active-day');
-                } else {
-                    cell.classList.add('hidden');
-                    cell.classList.remove('active-day');
-                }
-            });
-        }
-
-        // Auto-save ao digitar (opcional)
-        document.addEventListener('input', function(e) {
-            if (e.target.tagName === 'TEXTAREA' && e.target.closest('.content-cell')) {
-                // Auto-save após 2 segundos de inatividade
-                clearTimeout(e.target.autoSaveTimer);
-                e.target.autoSaveTimer = setTimeout(() => {
-                    salvarPlanificacao();
-                }, 2000);
-            }
-        });
-    </script>
-</body>
-</html>
+                alert('Turma
