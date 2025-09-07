@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
@@ -467,15 +467,51 @@
                 <ul id="listaTurmas" class="turma-list"></ul>
             </div>
 
-            <!-- Definir Semana -->
+            <!-- Definir Semana com Calendário -->
             <div class="card" id="cardSemana" style="display: none;">
-                <h3>📅 Definir Semana</h3>
-                <div class="form-group">
-                    <label>Descrição da Semana:</label>
-                    <input type="text" id="descricaoSemana" placeholder="Ex: 8 a 12 de setembro">
+                <h3>📅 Definir Semana de Planificação</h3>
+                
+                <!-- Semanas Rápidas -->
+                <div class="quick-weeks">
+                    <button class="quick-week-btn" onclick="criarSemanaRapida('esta')">📅 Esta Semana</button>
+                    <button class="quick-week-btn" onclick="criarSemanaRapida('proxima')">⏭️ Próxima Semana</button>
+                    <button class="quick-week-btn" onclick="criarSemanaRapida('custom')">🗓️ Escolher no Calendário</button>
                 </div>
-                <button id="btnCriarSemana">Criar Semana</button>
-                <ul id="listaSemanas" class="semana-list"></ul>
+
+                <!-- Calendário -->
+                <div id="calendarContainer" class="calendar-container" style="display: none;">
+                    <div class="calendar-header">
+                        <h4 id="calendarTitle">Selecione a Semana</h4>
+                        <div class="calendar-nav">
+                            <button onclick="changeMonth(-1)">‹</button>
+                            <button onclick="changeMonth(1)">›</button>
+                        </div>
+                    </div>
+                    
+                    <div class="calendar-grid">
+                        <div class="calendar-day-header">Dom</div>
+                        <div class="calendar-day-header">Seg</div>
+                        <div class="calendar-day-header">Ter</div>
+                        <div class="calendar-day-header">Qua</div>
+                        <div class="calendar-day-header">Qui</div>
+                        <div class="calendar-day-header">Sex</div>
+                        <div class="calendar-day-header">Sáb</div>
+                        <!-- Dias serão adicionados dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Semana Selecionada -->
+                <div id="selectedWeek" class="selected-range" style="display: none;">
+                    <h4>Semana Selecionada:</h4>
+                    <p id="weekRangeText"></p>
+                    <button onclick="confirmarSemana()" style="margin-top: 10px;">✅ Criar Esta Semana</button>
+                </div>
+
+                <!-- Lista de Semanas Existentes -->
+                <div style="margin-top: 30px;">
+                    <h4>📋 Semanas Criadas</h4>
+                    <ul id="listaSemanas" class="semana-list"></ul>
+                </div>
             </div>
         </div>
 
@@ -614,6 +650,9 @@
         let currentUser = null;
         let turmaAtiva = null;
         let semanaAtiva = null;
+        let calendarDate = new Date();
+        let selectedWeekStart = null;
+        let selectedWeekEnd = null;
 
         // Verificar estado de autenticação
         auth.onAuthStateChanged(function(user) {
@@ -929,37 +968,190 @@
             }
         }
 
-        // Criar semana (corrigido)
-        document.getElementById('btnCriarSemana').addEventListener('click', async function() {
-            if (!turmaAtiva) {
-                alert('Selecione uma turma primeiro.');
+        // Criar semana rápida
+        function criarSemanaRapida(tipo) {
+            const hoje = new Date();
+            let startDate, endDate;
+
+            if (tipo === 'esta') {
+                const dayOfWeek = hoje.getDay(); // 0 = Domingo
+                const monday = hoje.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                startDate = new Date(hoje.setDate(monday));
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 4); // Segunda a Sexta
+            } else if (tipo === 'proxima') {
+                const dayOfWeek = hoje.getDay();
+                const monday = hoje.getDate() - dayOfWeek + (dayOfWeek === 0 ? 1 : 8);
+                startDate = new Date(hoje.setDate(monday));
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 4);
+            } else if (tipo === 'custom') {
+                document.getElementById('calendarContainer').style.display = 'block';
+                generateCalendar();
                 return;
             }
 
-            const descricao = document.getElementById('descricaoSemana').value.trim();
-            if (!descricao) {
-                alert('Digite a descrição da semana.');
+            selectedWeekStart = startDate;
+            selectedWeekEnd = endDate;
+            mostrarSemanaSelcionada();
+        }
+
+        // Gerar calendário
+        function generateCalendar() {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            
+            document.getElementById('calendarTitle').textContent = 
+                new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' })
+                    .format(calendarDate);
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+            const calendarGrid = document.querySelector('.calendar-grid');
+            
+            // Remove dias existentes (mantém cabeçalhos)
+            const existingDays = calendarGrid.querySelectorAll('.calendar-day');
+            existingDays.forEach(day => day.remove());
+
+            // Gerar 42 dias (6 semanas)
+            for (let i = 0; i < 42; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                
+                if (currentDate.getMonth() !== month) {
+                    dayElement.classList.add('other-month');
+                }
+
+                if (isToday(currentDate)) {
+                    dayElement.classList.add('today');
+                }
+
+                dayElement.innerHTML = `
+                    <div class="day-number">${currentDate.getDate()}</div>
+                `;
+
+                dayElement.onclick = () => selectWeek(currentDate);
+                calendarGrid.appendChild(dayElement);
+            }
+        }
+
+        // Verificar se é hoje
+        function isToday(date) {
+            const today = new Date();
+            return date.toDateString() === today.toDateString();
+        }
+
+        // Selecionar semana
+        function selectWeek(clickedDate) {
+            const dayOfWeek = clickedDate.getDay();
+            const monday = new Date(clickedDate);
+            monday.setDate(clickedDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1));
+            
+            const friday = new Date(monday);
+            friday.setDate(monday.getDate() + 4);
+
+            selectedWeekStart = monday;
+            selectedWeekEnd = friday;
+
+            // Atualizar visual do calendário
+            updateCalendarSelection();
+            mostrarSemanaSelcionada();
+        }
+
+        // Atualizar seleção visual do calendário
+        function updateCalendarSelection() {
+            const days = document.querySelectorAll('.calendar-day');
+            days.forEach(day => {
+                day.classList.remove('selected', 'in-range', 'range-start', 'range-end');
+            });
+
+            if (selectedWeekStart && selectedWeekEnd) {
+                days.forEach(day => {
+                    const dayDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 
+                        parseInt(day.querySelector('.day-number').textContent));
+                    
+                    if (dayDate >= selectedWeekStart && dayDate <= selectedWeekEnd) {
+                        day.classList.add('in-range');
+                        if (dayDate.getTime() === selectedWeekStart.getTime()) {
+                            day.classList.add('range-start');
+                        }
+                        if (dayDate.getTime() === selectedWeekEnd.getTime()) {
+                            day.classList.add('range-end');
+                        }
+                    }
+                });
+            }
+        }
+
+        // Mostrar semana selecionada
+        function mostrarSemanaSelcionada() {
+            if (!selectedWeekStart || !selectedWeekEnd) return;
+
+            const startStr = selectedWeekStart.toLocaleDateString('pt-PT');
+            const endStr = selectedWeekEnd.toLocaleDateString('pt-PT');
+            
+            document.getElementById('weekRangeText').textContent = 
+                `${startStr} a ${endStr} (Segunda a Sexta-feira)`;
+            document.getElementById('selectedWeek').style.display = 'block';
+        }
+
+        // Confirmar criação da semana
+        async function confirmarSemana() {
+            if (!turmaAtiva || !selectedWeekStart || !selectedWeekEnd) {
+                alert('Erro: dados incompletos.');
                 return;
             }
+
+            const startStr = selectedWeekStart.toLocaleDateString('pt-PT');
+            const endStr = selectedWeekEnd.toLocaleDateString('pt-PT');
+            const descricao = `${startStr} a ${endStr}`;
 
             try {
-                console.log('A criar semana:', descricao, 'para turma:', turmaAtiva.id); // Debug
+                console.log('A criar semana:', descricao, 'para turma:', turmaAtiva.id);
                 
                 await db.collection('semanas').add({
                     turmaId: turmaAtiva.id,
                     descricao: descricao,
+                    dataInicio: firebase.firestore.Timestamp.fromDate(selectedWeekStart),
+                    dataFim: firebase.firestore.Timestamp.fromDate(selectedWeekEnd),
                     criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
                     planificacao: {}
                 });
 
-                document.getElementById('descricaoSemana').value = '';
+                // Resetar seleção
+                selectedWeekStart = null;
+                selectedWeekEnd = null;
+                document.getElementById('selectedWeek').style.display = 'none';
+                document.getElementById('calendarContainer').style.display = 'none';
+
                 carregarSemanas();
                 alert('Semana criada com sucesso!');
             } catch (error) {
                 console.error('Erro ao criar semana:', error);
-                alert('Erro ao criar semana: ' + error.message);
+                
+                if (error.code === 'permission-denied') {
+                    alert('Erro de permissões. Verifique as regras do Firestore:\n\n' +
+                          '1. Vá ao Firebase Console\n' +
+                          '2. Firestore Database → Rules\n' +
+                          '3. Use regras de teste:\n\n' +
+                          'allow read, write: if request.auth != null;');
+                } else {
+                    alert('Erro ao criar semana: ' + error.message);
+                }
             }
-        });
+        }
+
+        // Navegar meses do calendário
+        function changeMonth(direction) {
+            calendarDate.setMonth(calendarDate.getMonth() + direction);
+            generateCalendar();
+        }
 
         // Carregar semanas (corrigido)
         async function carregarSemanas() {
@@ -1019,18 +1211,15 @@
             }
         }
 
-        // Abrir planificação
-        function abrirPlanificacao(indexSemana) {
-            if (turmaAtiva === null) return;
+        // Abrir planificação (atualizado)
+        function abrirPlanificacao(semanaId, descricao) {
+            if (!turmaAtiva) return;
 
-            semanaAtiva = indexSemana;
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            const turma = turmas[turmaAtiva];
-            const semana = turma.semanas[indexSemana];
+            semanaAtiva = { id: semanaId, descricao: descricao };
 
-            document.getElementById('tituloAtual').textContent = `Planificação: ${semana.descricao}`;
-            document.getElementById('infoAtual').textContent = `${turma.nome} • ${turma.ano} • ${turma.professor}`;
-            document.getElementById('cabecalhoPlanificacao').textContent = `${turma.nome} | ${turma.ano} | ${turma.professor} | SEMANA: ${semana.descricao}`;
+            document.getElementById('tituloAtual').textContent = `Planificação: ${descricao}`;
+            document.getElementById('infoAtual').textContent = `${turmaAtiva.nome} • ${turmaAtiva.ano} • ${turmaAtiva.professor}`;
+            document.getElementById('cabecalhoPlanificacao').textContent = `${turmaAtiva.nome} | ${turmaAtiva.ano} | ${turmaAtiva.professor} | SEMANA: ${descricao}`;
 
             // Carregar dados salvos
             carregarDadosPlanificacao();
@@ -1061,52 +1250,66 @@
             }
         }
 
-        // Carregar dados da planificação
-        function carregarDadosPlanificacao() {
-            if (turmaAtiva === null || semanaAtiva === null) return;
+        // Carregar dados da planificação (atualizado para Firebase)
+        async function carregarDadosPlanificacao() {
+            if (!turmaAtiva || !semanaAtiva) return;
 
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            const planificacao = turmas[turmaAtiva].semanas[semanaAtiva].planificacao;
+            try {
+                const doc = await db.collection('semanas').doc(semanaAtiva.id).get();
+                if (!doc.exists) return;
 
-            // Carregar dados em cada textarea
-            const textareas = document.querySelectorAll('.content-cell textarea');
-            textareas.forEach(textarea => {
-                const cell = textarea.closest('.content-cell');
-                const day = cell.getAttribute('data-day');
-                const time = cell.getAttribute('data-time');
-                const key = `${day}-${time}`;
-                
-                if (planificacao[key]) {
-                    textarea.value = planificacao[key];
-                }
-            });
+                const planificacao = doc.data().planificacao || {};
+
+                // Carregar dados em cada textarea
+                const textareas = document.querySelectorAll('.content-cell textarea');
+                textareas.forEach(textarea => {
+                    const cell = textarea.closest('.content-cell');
+                    const day = cell.getAttribute('data-day');
+                    const time = cell.getAttribute('data-time');
+                    const key = `${day}-${time}`;
+                    
+                    if (planificacao[key]) {
+                        textarea.value = planificacao[key];
+                    } else {
+                        textarea.value = '';
+                    }
+                });
+            } catch (error) {
+                console.error('Erro ao carregar planificação:', error);
+            }
         }
 
-        // Salvar planificação
-        function salvarPlanificacao() {
-            if (turmaAtiva === null || semanaAtiva === null) {
+        // Salvar planificação (atualizado para Firebase)
+        async function salvarPlanificacao() {
+            if (!turmaAtiva || !semanaAtiva) {
                 alert('Selecione uma turma e semana primeiro.');
                 return;
             }
 
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            const planificacao = {};
+            try {
+                const planificacao = {};
 
-            // Recolher dados de cada textarea
-            const textareas = document.querySelectorAll('.content-cell textarea');
-            textareas.forEach(textarea => {
-                const cell = textarea.closest('.content-cell');
-                const day = cell.getAttribute('data-day');
-                const time = cell.getAttribute('data-time');
-                const key = `${day}-${time}`;
-                
-                planificacao[key] = textarea.value;
-            });
+                // Recolher dados de cada textarea
+                const textareas = document.querySelectorAll('.content-cell textarea');
+                textareas.forEach(textarea => {
+                    const cell = textarea.closest('.content-cell');
+                    const day = cell.getAttribute('data-day');
+                    const time = cell.getAttribute('data-time');
+                    const key = `${day}-${time}`;
+                    
+                    planificacao[key] = textarea.value;
+                });
 
-            turmas[turmaAtiva].semanas[semanaAtiva].planificacao = planificacao;
-            localStorage.setItem('turmas', JSON.stringify(turmas));
+                await db.collection('semanas').doc(semanaAtiva.id).update({
+                    planificacao: planificacao,
+                    atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+                });
 
-            alert('Planificação guardada com sucesso!');
+                alert('Planificação guardada com sucesso!');
+            } catch (error) {
+                console.error('Erro ao salvar planificação:', error);
+                alert('Erro ao guardar planificação: ' + error.message);
+            }
         }
 
         // Mostrar semana completa
@@ -1151,14 +1354,14 @@
             });
         }
 
-        // Auto-save ao digitar (opcional)
+        // Auto-save ao digitar (atualizado)
         document.addEventListener('input', function(e) {
             if (e.target.tagName === 'TEXTAREA' && e.target.closest('.content-cell')) {
-                // Auto-save após 2 segundos de inatividade
+                // Auto-save após 3 segundos de inatividade
                 clearTimeout(e.target.autoSaveTimer);
                 e.target.autoSaveTimer = setTimeout(() => {
                     salvarPlanificacao();
-                }, 2000);
+                }, 3000);
             }
         });
     </script>
