@@ -839,37 +839,55 @@
             }
         }
 
-        // Versão alternativa mais simples para eliminar turma
-        async function eliminarTurmaSimples(turmaId) {
+        // Função de eliminação mais segura
+        async function eliminarTurmaSegura(turmaId) {
+            if (!turmaId) {
+                alert('ID da turma inválido.');
+                return;
+            }
+
             if (!confirm('Tem a certeza que deseja eliminar esta turma? Esta ação não pode ser desfeita.')) {
                 return;
             }
 
+            // Mostrar loading
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '⏳';
+            button.disabled = true;
+
             try {
-                console.log('Eliminação simples da turma:', turmaId);
+                console.log('Eliminando turma com ID:', turmaId);
                 
-                // Tentar eliminar apenas a turma primeiro
+                // Verificar se a turma existe primeiro
+                const turmaDoc = await db.collection('turmas').doc(turmaId).get();
+                if (!turmaDoc.exists) {
+                    throw new Error('Turma não encontrada.');
+                }
+
+                // Eliminar a turma
                 await db.collection('turmas').doc(turmaId).delete();
-                
-                console.log('Turma eliminada. Procurando semanas órfãs...');
-                
-                // Eliminar semanas órfãs depois (opcional)
+                console.log('Turma eliminada com sucesso');
+
+                // Tentar limpar semanas relacionadas (sem falhar se houver problema)
                 try {
-                    const semanasSnapshot = await db.collection('semanas')
+                    const semanasQuery = await db.collection('semanas')
                         .where('turmaId', '==', turmaId)
                         .get();
                     
-                    for (const doc of semanasSnapshot.docs) {
-                        await db.collection('semanas').doc(doc.id).delete();
-                    }
-                } catch (semanaError) {
-                    console.log('Erro ao limpar semanas (não crítico):', semanaError);
+                    console.log(`Encontradas ${semanasQuery.size} semanas para limpar`);
+                    
+                    const deletePromises = semanasQuery.docs.map(doc => 
+                        db.collection('semanas').doc(doc.id).delete()
+                    );
+                    
+                    await Promise.all(deletePromises);
+                    console.log('Semanas relacionadas eliminadas');
+                } catch (cleanupError) {
+                    console.warn('Erro ao limpar semanas (não crítico):', cleanupError);
                 }
 
-                // Atualizar interface
-                carregarTurmas();
-
-                // Reset se a turma ativa foi eliminada
+                // Reset da interface se necessário
                 if (turmaAtiva && turmaAtiva.id === turmaId) {
                     turmaAtiva = null;
                     semanaAtiva = null;
@@ -877,11 +895,30 @@
                     document.getElementById('areaPlanificacao').style.display = 'none';
                 }
 
+                // Recarregar lista
+                await carregarTurmas();
                 alert('Turma eliminada com sucesso!');
 
             } catch (error) {
-                console.error('Erro na eliminação simples:', error);
-                alert('Erro ao eliminar turma: ' + error.message + '\n\nTente atualizar a página e tentar novamente.');
+                console.error('Erro ao eliminar turma:', error);
+                
+                let mensagem = 'Erro ao eliminar turma:\n\n';
+                
+                if (error.code === 'permission-denied') {
+                    mensagem += 'Sem permissões para eliminar.\n';
+                    mensagem += 'Verifique as regras do Firestore.';
+                } else if (error.code === 'not-found') {
+                    mensagem += 'Turma não encontrada.\n';
+                    mensagem += 'Pode já ter sido eliminada.';
+                } else {
+                    mensagem += error.message;
+                }
+                
+                alert(mensagem);
+                
+                // Restaurar botão mesmo com erro
+                button.innerHTML = originalText;
+                button.disabled = false;
             }
         }
 
