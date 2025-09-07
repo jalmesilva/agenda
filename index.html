@@ -839,10 +839,51 @@
             }
         }
 
-        // Carregar dados ao iniciar
-        window.onload = function() {
-            // O Firebase irá gerir automaticamente o estado de autenticação
-        };
+        // Versão alternativa mais simples para eliminar turma
+        async function eliminarTurmaSimples(turmaId) {
+            if (!confirm('Tem a certeza que deseja eliminar esta turma? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            try {
+                console.log('Eliminação simples da turma:', turmaId);
+                
+                // Tentar eliminar apenas a turma primeiro
+                await db.collection('turmas').doc(turmaId).delete();
+                
+                console.log('Turma eliminada. Procurando semanas órfãs...');
+                
+                // Eliminar semanas órfãs depois (opcional)
+                try {
+                    const semanasSnapshot = await db.collection('semanas')
+                        .where('turmaId', '==', turmaId)
+                        .get();
+                    
+                    for (const doc of semanasSnapshot.docs) {
+                        await db.collection('semanas').doc(doc.id).delete();
+                    }
+                } catch (semanaError) {
+                    console.log('Erro ao limpar semanas (não crítico):', semanaError);
+                }
+
+                // Atualizar interface
+                carregarTurmas();
+
+                // Reset se a turma ativa foi eliminada
+                if (turmaAtiva && turmaAtiva.id === turmaId) {
+                    turmaAtiva = null;
+                    semanaAtiva = null;
+                    document.getElementById('cardSemana').style.display = 'none';
+                    document.getElementById('areaPlanificacao').style.display = 'none';
+                }
+
+                alert('Turma eliminada com sucesso!');
+
+            } catch (error) {
+                console.error('Erro na eliminação simples:', error);
+                alert('Erro ao eliminar turma: ' + error.message + '\n\nTente atualizar a página e tentar novamente.');
+            }
+        }
 
         // Criar turma
         document.getElementById('btnCriarTurma').addEventListener('click', function() {
@@ -929,34 +970,36 @@
             }
         }
 
-        // Eliminar turma (corrigido)
+        // Eliminar turma (corrigido - versão mais robusta)
         async function eliminarTurma(turmaId) {
             if (!confirm('Tem a certeza que deseja eliminar esta turma? Esta ação não pode ser desfeita.')) {
                 return;
             }
 
             try {
-                console.log('A eliminar turma:', turmaId); // Debug
+                console.log('Iniciando eliminação da turma:', turmaId);
                 
-                // Eliminar todas as semanas da turma primeiro
+                // Primeiro, eliminar todas as semanas da turma uma por uma
                 const semanasSnapshot = await db.collection('semanas')
                     .where('turmaId', '==', turmaId)
                     .get();
 
-                console.log('Semanas a eliminar:', semanasSnapshot.size); // Debug
+                console.log('Encontradas', semanasSnapshot.size, 'semanas para eliminar');
 
-                // Eliminar semanas em lote
-                const batch = db.batch();
-                semanasSnapshot.forEach(doc => {
-                    batch.delete(doc.ref);
-                });
+                // Eliminar semanas individualmente (mais confiável que batch)
+                for (const doc of semanasSnapshot.docs) {
+                    console.log('Eliminando semana:', doc.id);
+                    await db.collection('semanas').doc(doc.id).delete();
+                }
 
-                // Eliminar a turma
-                batch.delete(db.collection('turmas').doc(turmaId));
+                console.log('Todas as semanas eliminadas. Eliminando turma...');
+
+                // Depois eliminar a turma
+                await db.collection('turmas').doc(turmaId).delete();
+
+                console.log('Turma eliminada com sucesso!');
                 
-                await batch.commit();
-
-                alert('Turma eliminada com sucesso!');
+                // Atualizar interface
                 carregarTurmas();
 
                 // Reset se a turma ativa foi eliminada
@@ -967,9 +1010,32 @@
                     document.getElementById('areaPlanificacao').style.display = 'none';
                 }
 
+                alert('Turma eliminada com sucesso!');
+
             } catch (error) {
-                console.error('Erro ao eliminar turma:', error);
-                alert('Erro ao eliminar turma: ' + error.message);
+                console.error('Erro detalhado ao eliminar turma:', error);
+                
+                let mensagemErro = 'Erro ao eliminar turma:\n\n';
+                
+                if (error.code === 'permission-denied') {
+                    mensagemErro += 'Permissões insuficientes para eliminar.\n\n';
+                    mensagemErro += 'Verifique se as regras do Firestore permitem operações de delete:\n\n';
+                    mensagemErro += 'rules_version = \'2\';\n';
+                    mensagemErro += 'service cloud.firestore {\n';
+                    mensagemErro += '  match /databases/{database}/documents {\n';
+                    mensagemErro += '    match /{document=**} {\n';
+                    mensagemErro += '      allow read, write, delete: if request.auth != null;\n';
+                    mensagemErro += '    }\n';
+                    mensagemErro += '  }\n';
+                    mensagemErro += '}\n';
+                } else if (error.code === 'not-found') {
+                    mensagemErro += 'Turma não encontrada. Pode já ter sido eliminada.';
+                } else {
+                    mensagemErro += error.message;
+                    mensagemErro += '\n\nCódigo do erro: ' + error.code;
+                }
+                
+                alert(mensagemErro);
             }
         }
 
