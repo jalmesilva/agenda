@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planificação Semanal - 1º Ciclo</title>
     
-    <!-- Firebase SDKs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    <!-- Firebase SDKs - Versão mais estável -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <style>
         * {
             margin: 0;
@@ -616,6 +616,7 @@
 
         // Verificar estado de autenticação
         auth.onAuthStateChanged(function(user) {
+            console.log('Estado de autenticação mudou:', user); // Debug
             if (user) {
                 currentUser = user;
                 document.getElementById('userName').textContent = user.displayName || user.email;
@@ -668,40 +669,88 @@
         // Login
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            console.log('Tentativa de login com:', email); // Debug
+
+            if (!email || !password) {
+                mostrarErro('Por favor, preencha todos os campos.');
+                return;
+            }
+
+            // Mostrar loading
+            const submitBtn = e.target.querySelector('button');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'A entrar...';
+            submitBtn.disabled = true;
 
             auth.signInWithEmailAndPassword(email, password)
                 .then(function(userCredential) {
+                    console.log('Login bem-sucedido:', userCredential.user); // Debug
                     mostrarSucesso('Login realizado com sucesso!');
+                    // O onAuthStateChanged irá tratar da mudança de tela
                 })
                 .catch(function(error) {
+                    console.error('Erro no login:', error); // Debug
                     let mensagem = 'Erro no login. Verifique os seus dados.';
-                    if (error.code === 'auth/user-not-found') {
-                        mensagem = 'Utilizador não encontrado.';
-                    } else if (error.code === 'auth/wrong-password') {
-                        mensagem = 'Palavra-passe incorreta.';
-                    } else if (error.code === 'auth/invalid-email') {
-                        mensagem = 'Email inválido.';
+                    
+                    switch(error.code) {
+                        case 'auth/user-not-found':
+                            mensagem = 'Utilizador não encontrado.';
+                            break;
+                        case 'auth/wrong-password':
+                            mensagem = 'Palavra-passe incorreta.';
+                            break;
+                        case 'auth/invalid-email':
+                            mensagem = 'Email inválido.';
+                            break;
+                        case 'auth/user-disabled':
+                            mensagem = 'Esta conta foi desativada.';
+                            break;
+                        case 'auth/too-many-requests':
+                            mensagem = 'Muitas tentativas. Tente novamente mais tarde.';
+                            break;
+                        default:
+                            mensagem = `Erro: ${error.message}`;
                     }
                     mostrarErro(mensagem);
+                })
+                .finally(function() {
+                    // Restaurar botão
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
                 });
         });
 
         // Registo
         document.getElementById('registerForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const name = document.getElementById('registerName').value;
-            const email = document.getElementById('registerEmail').value;
-            const password = document.getElementById('registerPassword').value;
+            const name = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value.trim();
+
+            console.log('Tentativa de registo com:', email); // Debug
+
+            if (!name || !email || !password) {
+                mostrarErro('Por favor, preencha todos os campos.');
+                return;
+            }
 
             if (password.length < 6) {
                 mostrarErro('A palavra-passe deve ter pelo menos 6 caracteres.');
                 return;
             }
 
+            // Mostrar loading
+            const submitBtn = e.target.querySelector('button');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'A registar...';
+            submitBtn.disabled = true;
+
             auth.createUserWithEmailAndPassword(email, password)
                 .then(function(userCredential) {
+                    console.log('Registo bem-sucedido:', userCredential.user); // Debug
                     // Atualizar perfil com nome
                     return userCredential.user.updateProfile({
                         displayName: name
@@ -709,17 +758,37 @@
                 })
                 .then(function() {
                     mostrarSucesso('Conta criada com sucesso! A iniciar sessão...');
+                    // Limpar formulário
+                    document.getElementById('registerName').value = '';
+                    document.getElementById('registerEmail').value = '';
+                    document.getElementById('registerPassword').value = '';
                 })
                 .catch(function(error) {
+                    console.error('Erro no registo:', error); // Debug
                     let mensagem = 'Erro ao criar conta.';
-                    if (error.code === 'auth/email-already-in-use') {
-                        mensagem = 'Este email já está a ser usado.';
-                    } else if (error.code === 'auth/invalid-email') {
-                        mensagem = 'Email inválido.';
-                    } else if (error.code === 'auth/weak-password') {
-                        mensagem = 'Palavra-passe muito fraca.';
+                    
+                    switch(error.code) {
+                        case 'auth/email-already-in-use':
+                            mensagem = 'Este email já está a ser usado.';
+                            break;
+                        case 'auth/invalid-email':
+                            mensagem = 'Email inválido.';
+                            break;
+                        case 'auth/weak-password':
+                            mensagem = 'Palavra-passe muito fraca.';
+                            break;
+                        case 'auth/operation-not-allowed':
+                            mensagem = 'Registo não permitido. Contacte o administrador.';
+                            break;
+                        default:
+                            mensagem = `Erro: ${error.message}`;
                     }
                     mostrarErro(mensagem);
+                })
+                .finally(function() {
+                    // Restaurar botão
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
                 });
         });
 
