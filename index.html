@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planificação Semanal - 1º Ciclo</title>
     
-    <!-- Firebase SDKs - Versão mais estável -->
+    <!-- Firebase SDKs - Versão 8.10.1 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -365,25 +365,56 @@
             display: block;
         }
 
-        .container {
+        .calendar-day {
             padding: 10px;
+            cursor: pointer;
+            text-align: center;
         }
 
-        .header h1 {
-            font-size: 1.8em;
+        .calendar-day.other-month {
+            color: #ccc;
         }
 
-        .schedule-table {
-            font-size: 9px;
+        .calendar-day.today {
+            background: #e0f7fa;
         }
 
-        .content-cell {
-            height: 80px;
-            width: 150px;
+        .calendar-day.in-range {
+            background: #bbdefb;
         }
 
-        .content-cell textarea {
-            font-size: 9px;
+        .calendar-day.range-start, .calendar-day.range-end {
+            background: #64b5f6;
+            color: white;
+        }
+
+        .calendar-container {
+            margin-top: 20px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .calendar-nav button {
+            width: auto;
+            padding: 5px 10px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+            background: #f8f9fa;
         }
     </style>
 </head>
@@ -646,6 +677,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        console.log('Firebase inicializado com sucesso:', firebase.app().name);
 
         let currentUser = null;
         let turmaAtiva = null;
@@ -656,7 +688,7 @@
 
         // Verificar estado de autenticação
         auth.onAuthStateChanged(function(user) {
-            console.log('Estado de autenticação mudou:', user);
+            console.log('Estado de autenticação:', user ? user.uid : 'Nenhum usuário autenticado');
             if (user) {
                 currentUser = user;
                 document.getElementById('userName').textContent = user.displayName || user.email;
@@ -825,6 +857,12 @@
 
         // Criar turma
         document.getElementById('btnCriarTurma').addEventListener('click', async function() {
+            if (!currentUser) {
+                alert('Erro: Você precisa estar autenticado para criar uma turma.');
+                console.error('Erro: Usuário não autenticado ao tentar criar turma.');
+                return;
+            }
+
             const nome = document.getElementById('nomeTurma').value.trim();
             const ano = document.getElementById('anoLetivo').value.trim();
             const professor = document.getElementById('nomeProfessor').value.trim();
@@ -835,6 +873,7 @@
             }
 
             try {
+                console.log('Criando turma para userId:', currentUser.uid);
                 await db.collection('turmas').add({
                     userId: currentUser.uid,
                     nome,
@@ -850,8 +889,8 @@
                 carregarTurmas();
                 alert('Turma criada com sucesso!');
             } catch (error) {
-                console.error('Erro ao criar turma:', error);
-                alert('Erro ao criar turma: ' + error.message);
+                console.error('Erro ao criar turma:', error.message, error.code);
+                alert(`Erro ao criar turma: ${error.message}`);
             }
         });
 
@@ -860,7 +899,14 @@
             const lista = document.getElementById('listaTurmas');
             lista.innerHTML = '';
 
+            if (!currentUser) {
+                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Usuário não autenticado</li>';
+                console.error('Erro: Usuário não autenticado ao tentar carregar turmas.');
+                return;
+            }
+
             try {
+                console.log('Carregando turmas para userId:', currentUser.uid);
                 const snapshot = await db.collection('turmas')
                     .where('userId', '==', currentUser.uid)
                     .orderBy('criadoEm', 'desc')
@@ -868,11 +914,13 @@
 
                 if (snapshot.empty) {
                     lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma turma criada</li>';
+                    console.log('Nenhuma turma encontrada para userId:', currentUser.uid);
                     return;
                 }
 
                 snapshot.forEach(doc => {
                     const turma = { id: doc.id, ...doc.data() };
+                    console.log('Turma carregada:', turma);
                     const li = document.createElement('li');
                     li.className = 'turma-item';
                     li.innerHTML = `
@@ -888,8 +936,8 @@
                     lista.appendChild(li);
                 });
             } catch (error) {
-                console.error('Erro ao carregar turmas:', error);
-                lista.innerHTML = '<li style="color: red;">Erro ao carregar turmas.</li>';
+                console.error('Erro ao carregar turmas:', error.message, error.code);
+                lista.innerHTML = `<li style="color: red;">Erro ao carregar turmas: ${error.message}</li>`;
             }
         }
 
@@ -921,6 +969,7 @@
             }
 
             try {
+                console.log('Eliminando turma:', turmaId);
                 const semanasSnapshot = await db.collection('semanas')
                     .where('turmaId', '==', turmaId)
                     .get();
@@ -944,8 +993,8 @@
 
                 alert('Turma eliminada com sucesso!');
             } catch (error) {
-                console.error('Erro ao eliminar turma:', error);
-                alert('Erro ao eliminar turma: ' + error.message);
+                console.error('Erro ao eliminar turma:', error.message, error.code);
+                alert(`Erro ao eliminar turma: ${error.message}`);
             }
         }
 
@@ -1017,6 +1066,8 @@
                 dayElement.onclick = () => selectWeek(currentDate);
                 calendarGrid.appendChild(dayElement);
             }
+
+            updateCalendarSelection();
         }
 
         // Verificar se é hoje
@@ -1108,16 +1159,8 @@
                 carregarSemanas();
                 alert('Semana criada com sucesso!');
             } catch (error) {
-                console.error('Erro ao criar semana:', error);
-                if (error.code === 'permission-denied') {
-                    alert('Erro de permissões. Verifique as regras do Firestore:\n\n' +
-                          '1. Vá ao Firebase Console\n' +
-                          '2. Firestore Database → Rules\n' +
-                          '3. Use regras de teste:\n\n' +
-                          'allow read, write: if request.auth != null;');
-                } else {
-                    alert('Erro ao criar semana: ' + error.message);
-                }
+                console.error('Erro ao criar semana:', error.message, error.code);
+                alert(`Erro ao criar semana: ${error.message}`);
             }
         }
 
@@ -1161,8 +1204,8 @@
                     confirmarBtn.textContent = '✅ Criar Esta Semana';
                     confirmarBtn.onclick = confirmarSemana;
                 } catch (error) {
-                    console.error('Erro ao atualizar semana:', error);
-                    alert('Erro ao atualizar semana: ' + error.message);
+                    console.error('Erro ao atualizar semana:', error.message, error.code);
+                    alert(`Erro ao atualizar semana: ${error.message}`);
                 }
             };
         }
@@ -1183,7 +1226,7 @@
             }
 
             try {
-                console.log('A carregar semanas para a turma:', turmaAtiva.id);
+                console.log('Carregando semanas para turmaId:', turmaAtiva.id);
                 const snapshot = await db.collection('semanas')
                     .where('turmaId', '==', turmaAtiva.id)
                     .orderBy('criadoEm', 'desc')
@@ -1220,11 +1263,8 @@
                     lista.appendChild(li);
                 });
             } catch (error) {
-                console.error('Erro ao carregar semanas:', error);
-                lista.innerHTML = '<li style="color: red;">Erro ao carregar semanas. Pode precisar criar índice no Firestore.</li>';
-                if (error.code === 'failed-precondition') {
-                    console.log('Precisa criar um índice no Firestore. Clique no link que apareceu no console.');
-                }
+                console.error('Erro ao carregar semanas:', error.message, error.code);
+                lista.innerHTML = `<li style="color: red;">Erro ao carregar semanas: ${error.message}</li>`;
             }
         }
 
@@ -1250,6 +1290,7 @@
             }
 
             try {
+                console.log('Eliminando semana:', semanaId);
                 await db.collection('semanas').doc(semanaId).delete();
                 carregarSemanas();
 
@@ -1260,8 +1301,8 @@
 
                 alert('Semana eliminada com sucesso!');
             } catch (error) {
-                console.error('Erro ao eliminar semana:', error);
-                alert('Erro ao eliminar semana: ' + error.message);
+                console.error('Erro ao eliminar semana:', error.message, error.code);
+                alert(`Erro ao eliminar semana: ${error.message}`);
             }
         }
 
@@ -1270,8 +1311,12 @@
             if (!turmaAtiva || !semanaAtiva) return;
 
             try {
+                console.log('Carregando planificação para semanaId:', semanaAtiva.id);
                 const doc = await db.collection('semanas').doc(semanaAtiva.id).get();
-                if (!doc.exists) return;
+                if (!doc.exists) {
+                    console.warn('Documento da semana não encontrado:', semanaAtiva.id);
+                    return;
+                }
 
                 const planificacao = doc.data().planificacao || {};
                 const textareas = document.querySelectorAll('.content-cell textarea');
@@ -1283,7 +1328,7 @@
                     textarea.value = planificacao[key] || '';
                 });
             } catch (error) {
-                console.error('Erro ao carregar planificação:', error);
+                console.error('Erro ao carregar planificação:', error.message, error.code);
             }
         }
 
@@ -1295,6 +1340,7 @@
             }
 
             try {
+                console.log('Salvando planificação para semanaId:', semanaAtiva.id);
                 const planificacao = {};
                 const textareas = document.querySelectorAll('.content-cell textarea');
                 textareas.forEach(textarea => {
@@ -1312,8 +1358,8 @@
 
                 alert('Planificação guardada com sucesso!');
             } catch (error) {
-                console.error('Erro ao salvar planificação:', error);
-                alert('Erro ao guardar planificação: ' + error.message);
+                console.error('Erro ao salvar planificação:', error.message, error.code);
+                alert(`Erro ao guardar planificação: ${error.message}`);
             }
         }
 
