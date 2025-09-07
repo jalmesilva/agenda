@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -364,6 +365,8 @@
         .main-content.active {
             display: block;
         }
+
+        @media (max-width: 768px) {
             .container {
                 padding: 10px;
             }
@@ -383,6 +386,11 @@
 
             .content-cell textarea {
                 font-size: 9px;
+            }
+
+            .auth-card {
+                margin: 20px;
+                padding: 30px 20px;
             }
         }
     </style>
@@ -442,196 +450,160 @@
                 <p>Sistema de Planificação para Professores do 1º Ciclo</p>
             </div>
 
-        <div class="controls">
-            <!-- Criar Turma -->
-            <div class="card">
-                <h3>📚 Criar Nova Turma</h3>
-                <div class="form-group">
-                    <label>Nome da Turma:</label>
-                    <input type="text" id="nomeTurma" placeholder="Ex: 4º ano">
-                </div>
-                <div class="form-group">
-                    <label>Ano Letivo:</label>
-                    <input type="text" id="anoLetivo" placeholder="Ex: 2024/2025">
-                </div>
-                <div class="form-group">
-                    <label>Professor(a):</label>
-                    <input type="text" id="nomeProfessor" placeholder="Nome do professor">
-                </div>
-                <button id="btnCriarTurma">Criar Turma</button>
-            </div>
-
-            <!-- Lista de Turmas -->
-            <div class="card">
-                <h3>📋 Turmas Criadas</h3>
-                <ul id="listaTurmas" class="turma-list"></ul>
-            </div>
-
-            <!-- Definir Semana com Calendário -->
-            <div class="card" id="cardSemana" style="display: none;">
-                <h3>📅 Definir Semana de Planificação</h3>
-                
-                <!-- Semanas Rápidas -->
-                <div class="quick-weeks">
-                    <button class="quick-week-btn" onclick="criarSemanaRapida('esta')">📅 Esta Semana</button>
-                    <button class="quick-week-btn" onclick="criarSemanaRapida('proxima')">⏭️ Próxima Semana</button>
-                    <button class="quick-week-btn" onclick="criarSemanaRapida('custom')">🗓️ Escolher no Calendário</button>
-                </div>
-
-                <!-- Calendário -->
-                <div id="calendarContainer" class="calendar-container" style="display: none;">
-                    <div class="calendar-header">
-                        <h4 id="calendarTitle">Selecione a Semana</h4>
-                        <div class="calendar-nav">
-                            <button onclick="changeMonth(-1)">‹</button>
-                            <button onclick="changeMonth(1)">›</button>
-                        </div>
+            <div class="controls">
+                <!-- Criar Turma -->
+                <div class="card">
+                    <h3>📚 Criar Nova Turma</h3>
+                    <div class="form-group">
+                        <label>Nome da Turma:</label>
+                        <input type="text" id="nomeTurma" placeholder="Ex: 4º ano">
                     </div>
-                    
-                    <div class="calendar-grid">
-                        <div class="calendar-day-header">Dom</div>
-                        <div class="calendar-day-header">Seg</div>
-                        <div class="calendar-day-header">Ter</div>
-                        <div class="calendar-day-header">Qua</div>
-                        <div class="calendar-day-header">Qui</div>
-                        <div class="calendar-day-header">Sex</div>
-                        <div class="calendar-day-header">Sáb</div>
-                        <!-- Dias serão adicionados dinamicamente -->
+                    <div class="form-group">
+                        <label>Ano Letivo:</label>
+                        <input type="text" id="anoLetivo" placeholder="Ex: 2024/2025">
                     </div>
+                    <div class="form-group">
+                        <label>Professor(a):</label>
+                        <input type="text" id="nomeProfessor" placeholder="Nome do professor">
+                    </div>
+                    <button id="btnCriarTurma">Criar Turma</button>
                 </div>
 
-                <!-- Semana Selecionada -->
-                <div id="selectedWeek" class="selected-range" style="display: none;">
-                    <h4>Semana Selecionada:</h4>
-                    <p id="weekRangeText"></p>
-                    <button onclick="confirmarSemana()" style="margin-top: 10px;">✅ Criar Esta Semana</button>
+                <!-- Lista de Turmas -->
+                <div class="card">
+                    <h3>📋 Turmas Criadas</h3>
+                    <ul id="listaTurmas" class="turma-list"></ul>
                 </div>
 
-                <!-- Lista de Semanas Existentes -->
-                <div style="margin-top: 30px;">
-                    <h4>📋 Semanas Criadas</h4>
+                <!-- Definir Semana -->
+                <div class="card" id="cardSemana" style="display: none;">
+                    <h3>📅 Definir Semana</h3>
+                    <div class="form-group">
+                        <label>Descrição da Semana:</label>
+                        <input type="text" id="descricaoSemana" placeholder="Ex: 8 a 12 de setembro">
+                    </div>
+                    <button id="btnCriarSemana">Criar Semana</button>
                     <ul id="listaSemanas" class="semana-list"></ul>
                 </div>
             </div>
-        </div>
 
-        <!-- Área da Planificação -->
-        <div id="areaPlanificacao" style="display: none;">
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div>
-                        <h3 id="tituloAtual">Planificação Ativa</h3>
-                        <p id="infoAtual" style="color: #666; margin-top: 5px;"></p>
+            <!-- Área da Planificação -->
+            <div id="areaPlanificacao" style="display: none;">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 id="tituloAtual">Planificação Ativa</h3>
+                            <p id="infoAtual" style="color: #666; margin-top: 5px;"></p>
+                        </div>
+                        <div class="view-controls">
+                            <button onclick="mostrarSemanaCompleta()">📅 Semana Completa</button>
+                            <button onclick="mostrarDia('segunda')">2ª feira</button>
+                            <button onclick="mostrarDia('terca')">3ª feira</button>
+                            <button onclick="mostrarDia('quarta')">4ª feira</button>
+                            <button onclick="mostrarDia('quinta')">5ª feira</button>
+                            <button onclick="mostrarDia('sexta')">6ª feira</button>
+                            <button onclick="salvarPlanificacao()" class="btn-secondary">💾 Salvar</button>
+                        </div>
                     </div>
-                    <div class="view-controls">
-                        <button onclick="mostrarSemanaCompleta()">📅 Semana Completa</button>
-                        <button onclick="mostrarDia('segunda')">2ª feira</button>
-                        <button onclick="mostrarDia('terca')">3ª feira</button>
-                        <button onclick="mostrarDia('quarta')">4ª feira</button>
-                        <button onclick="mostrarDia('quinta')">5ª feira</button>
-                        <button onclick="mostrarDia('sexta')">6ª feira</button>
-                        <button onclick="salvarPlanificacao()" class="btn-secondary">💾 Salvar</button>
+
+                    <div class="schedule-container">
+                        <div class="schedule-header">
+                            <h4 id="cabecalhoPlanificacao">Planificação Semanal</h4>
+                        </div>
+                        <table class="schedule-table">
+                            <thead>
+                                <tr>
+                                    <th>Horas</th>
+                                    <th class="day-header" data-day="segunda">2ª feira</th>
+                                    <th class="day-header" data-day="terca">3ª feira</th>
+                                    <th class="day-header" data-day="quarta">4ª feira</th>
+                                    <th class="day-header" data-day="quinta">5ª feira</th>
+                                    <th class="day-header" data-day="sexta">6ª feira</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="time-cell">9h00–10h30</td>
+                                    <td class="content-cell day-cell" data-day="segunda" data-time="0900-1030">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="terca" data-time="0900-1030">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="quarta" data-time="0900-1030">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="quinta" data-time="0900-1030">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="sexta" data-time="0900-1030">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="time-cell">11h00–12h30</td>
+                                    <td class="content-cell day-cell" data-day="segunda" data-time="1100-1230">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="terca" data-time="1100-1230">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="quarta" data-time="1100-1230">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="quinta" data-time="1100-1230">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="sexta" data-time="1100-1230">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="time-cell">13h45–15h30</td>
+                                    <td class="content-cell day-cell" data-day="segunda" data-time="1345-1530">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="terca" data-time="1345-1530">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="quarta" data-time="1345-1530">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="quinta" data-time="1345-1530">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="sexta" data-time="1345-1530">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="time-cell">16h00–17h15</td>
+                                    <td class="content-cell day-cell" data-day="segunda" data-time="1600-1715">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="terca" data-time="1600-1715">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="quarta" data-time="1600-1715">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="quinta" data-time="1600-1715">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                    <td class="content-cell day-cell" data-day="sexta" data-time="1600-1715">
+                                        <textarea placeholder="Planificação..."></textarea>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-
-                <div class="schedule-container">
-                    <div class="schedule-header">
-                        <h4 id="cabecalhoPlanificacao">Planificação Semanal</h4>
-                    </div>
-                    <table class="schedule-table">
-                        <thead>
-                            <tr>
-                                <th>Horas</th>
-                                <th class="day-header" data-day="segunda">2ª feira</th>
-                                <th class="day-header" data-day="terca">3ª feira</th>
-                                <th class="day-header" data-day="quarta">4ª feira</th>
-                                <th class="day-header" data-day="quinta">5ª feira</th>
-                                <th class="day-header" data-day="sexta">6ª feira</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="time-cell">9h00–10h30</td>
-                                <td class="content-cell day-cell" data-day="segunda" data-time="0900-1030">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="terca" data-time="0900-1030">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="quarta" data-time="0900-1030">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="quinta" data-time="0900-1030">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="sexta" data-time="0900-1030">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="time-cell">11h00–12h30</td>
-                                <td class="content-cell day-cell" data-day="segunda" data-time="1100-1230">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="terca" data-time="1100-1230">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="quarta" data-time="1100-1230">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="quinta" data-time="1100-1230">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="sexta" data-time="1100-1230">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="time-cell">13h45–15h30</td>
-                                <td class="content-cell day-cell" data-day="segunda" data-time="1345-1530">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="terca" data-time="1345-1530">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="quarta" data-time="1345-1530">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="quinta" data-time="1345-1530">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="sexta" data-time="1345-1530">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="time-cell">16h00–17h15</td>
-                                <td class="content-cell day-cell" data-day="segunda" data-time="1600-1715">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="terca" data-time="1600-1715">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="quarta" data-time="1600-1715">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="quinta" data-time="1600-1715">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                                <td class="content-cell day-cell" data-day="sexta" data-time="1600-1715">
-                                    <textarea placeholder="Planificação..."></textarea>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Configuração do Firebase - Suas configurações reais
+        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAC9EguGeZd50W1jADEx73aJKGacFeGk9o",
             authDomain: "bddespesas.firebaseapp.com",
@@ -650,13 +622,10 @@
         let currentUser = null;
         let turmaAtiva = null;
         let semanaAtiva = null;
-        let calendarDate = new Date();
-        let selectedWeekStart = null;
-        let selectedWeekEnd = null;
 
         // Verificar estado de autenticação
         auth.onAuthStateChanged(function(user) {
-            console.log('Estado de autenticação mudou:', user); // Debug
+            console.log('Estado de autenticação mudou:', user);
             if (user) {
                 currentUser = user;
                 document.getElementById('userName').textContent = user.displayName || user.email;
@@ -679,15 +648,12 @@
         }
 
         function mostrarForm(tipo) {
-            // Atualizar tabs
             document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
 
-            // Mostrar formulário
             document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
             document.getElementById(tipo + 'Form').classList.add('active');
 
-            // Limpar mensagens
             document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('successMessage').style.display = 'none';
         }
@@ -712,14 +678,13 @@
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
 
-            console.log('Tentativa de login com:', email); // Debug
+            console.log('Tentativa de login com:', email);
 
             if (!email || !password) {
                 mostrarErro('Por favor, preencha todos os campos.');
                 return;
             }
 
-            // Mostrar loading
             const submitBtn = e.target.querySelector('button');
             const originalText = submitBtn.textContent;
             submitBtn.textContent = 'A entrar...';
@@ -727,12 +692,11 @@
 
             auth.signInWithEmailAndPassword(email, password)
                 .then(function(userCredential) {
-                    console.log('Login bem-sucedido:', userCredential.user); // Debug
+                    console.log('Login bem-sucedido:', userCredential.user);
                     mostrarSucesso('Login realizado com sucesso!');
-                    // O onAuthStateChanged irá tratar da mudança de tela
                 })
                 .catch(function(error) {
-                    console.error('Erro no login:', error); // Debug
+                    console.error('Erro no login:', error);
                     let mensagem = 'Erro no login. Verifique os seus dados.';
                     
                     switch(error.code) {
@@ -757,7 +721,6 @@
                     mostrarErro(mensagem);
                 })
                 .finally(function() {
-                    // Restaurar botão
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
                 });
@@ -770,7 +733,7 @@
             const email = document.getElementById('registerEmail').value.trim();
             const password = document.getElementById('registerPassword').value.trim();
 
-            console.log('Tentativa de registo com:', email); // Debug
+            console.log('Tentativa de registo com:', email);
 
             if (!name || !email || !password) {
                 mostrarErro('Por favor, preencha todos os campos.');
@@ -782,7 +745,6 @@
                 return;
             }
 
-            // Mostrar loading
             const submitBtn = e.target.querySelector('button');
             const originalText = submitBtn.textContent;
             submitBtn.textContent = 'A registar...';
@@ -790,21 +752,19 @@
 
             auth.createUserWithEmailAndPassword(email, password)
                 .then(function(userCredential) {
-                    console.log('Registo bem-sucedido:', userCredential.user); // Debug
-                    // Atualizar perfil com nome
+                    console.log('Registo bem-sucedido:', userCredential.user);
                     return userCredential.user.updateProfile({
                         displayName: name
                     });
                 })
                 .then(function() {
                     mostrarSucesso('Conta criada com sucesso! A iniciar sessão...');
-                    // Limpar formulário
                     document.getElementById('registerName').value = '';
                     document.getElementById('registerEmail').value = '';
                     document.getElementById('registerPassword').value = '';
                 })
                 .catch(function(error) {
-                    console.error('Erro no registo:', error); // Debug
+                    console.error('Erro no registo:', error);
                     let mensagem = 'Erro ao criar conta.';
                     
                     switch(error.code) {
@@ -826,7 +786,6 @@
                     mostrarErro(mensagem);
                 })
                 .finally(function() {
-                    // Restaurar botão
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
                 });
@@ -839,41 +798,8 @@
             }
         }
 
-        // Função simples de eliminação sem complicações
-        async function eliminarTurmaFinal(turmaId) {
-            if (!confirm('Tem a certeza que deseja eliminar esta turma?')) {
-                return;
-            }
-
-            try {
-                console.log('A eliminar turma:', turmaId);
-                
-                // Eliminar turma diretamente
-                await db.collection('turmas').doc(turmaId).delete();
-                
-                console.log('Turma eliminada, a recarregar lista...');
-                
-                // Recarregar turmas
-                carregarTurmas();
-                
-                // Reset se necessário
-                if (turmaAtiva && turmaAtiva.id === turmaId) {
-                    turmaAtiva = null;
-                    semanaAtiva = null;
-                    document.getElementById('cardSemana').style.display = 'none';
-                    document.getElementById('areaPlanificacao').style.display = 'none';
-                }
-
-                alert('Turma eliminada!');
-
-            } catch (error) {
-                console.error('Erro:', error);
-                alert('Erro ao eliminar: ' + error.message);
-            }
-        }
-
         // Criar turma
-        document.getElementById('btnCriarTurma').addEventListener('click', function() {
+        document.getElementById('btnCriarTurma').addEventListener('click', async function() {
             const nome = document.getElementById('nomeTurma').value.trim();
             const ano = document.getElementById('anoLetivo').value.trim();
             const professor = document.getElementById('nomeProfessor').value.trim();
@@ -883,589 +809,21 @@
                 return;
             }
 
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            const novaTurma = {
-                id: Date.now(),
-                nome,
-                ano,
-                professor,
-                semanas: []
-            };
-
-            turmas.push(novaTurma);
-            localStorage.setItem('turmas', JSON.stringify(turmas));
-
-            // Limpar campos
-            document.getElementById('nomeTurma').value = '';
-            document.getElementById('anoLetivo').value = '';
-            document.getElementById('nomeProfessor').value = '';
-
-            carregarTurmas();
-            alert('Turma criada com sucesso!');
-        });
-
-        // Carregar lista de turmas
-        function carregarTurmas() {
-            const lista = document.getElementById('listaTurmas');
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-
-            lista.innerHTML = '';
-
-            if (turmas.length === 0) {
-                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma turma criada</li>';
-                return;
-            }
-
-            turmas.forEach((turma, index) => {
-                const li = document.createElement('li');
-                li.className = 'turma-item';
-                li.innerHTML = `
-                    <div class="turma-info">
-                        <strong>${turma.nome}</strong><br>
-                        <small>${turma.ano} • ${turma.professor}</small>
-                    </div>
-                    <div class="turma-actions">
-                        <button onclick="selecionarTurma(${index})" class="btn-secondary">Selecionar</button>
-                        <button onclick="eliminarTurma(${index})" class="btn-danger">Eliminar</button>
-                    </div>
-                `;
-                lista.appendChild(li);
-            });
-        }
-
-        // Selecionar turma (corrigido)
-        function selecionarTurma(turmaId, nome, ano, professor) {
-            console.log('Selecionando turma:', turmaId, nome, ano, professor); // Debug
-            
             try {
-                turmaAtiva = {
-                    id: turmaId,
-                    nome: nome,
-                    ano: ano,
-                    professor: professor
-                };
-                
-                console.log('Turma ativa definida:', turmaAtiva); // Debug
-                
-                document.getElementById('cardSemana').style.display = 'block';
-                carregarSemanas();
-                
-                alert(`Turma "${nome}" selecionada!`);
-            } catch (error) {
-                console.error('Erro ao selecionar turma:', error);
-                alert('Erro ao selecionar turma: ' + error.message);
-            }
-        }
+                await db.collection('turmas').add({
+                    userId: currentUser.uid,
+                    nome,
+                    ano,
+                    professor,
+                    criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+                });
 
-        // Eliminar turma (corrigido - versão mais robusta)
-        async function eliminarTurma(turmaId) {
-            if (!confirm('Tem a certeza que deseja eliminar esta turma? Esta ação não pode ser desfeita.')) {
-                return;
-            }
+                document.getElementById('nomeTurma').value = '';
+                document.getElementById('anoLetivo').value = '';
+                document.getElementById('nomeProfessor').value = '';
 
-            try {
-                console.log('Iniciando eliminação da turma:', turmaId);
-                
-                // Primeiro, eliminar todas as semanas da turma uma por uma
-                const semanasSnapshot = await db.collection('semanas')
-                    .where('turmaId', '==', turmaId)
-                    .get();
-
-                console.log('Encontradas', semanasSnapshot.size, 'semanas para eliminar');
-
-                // Eliminar semanas individualmente (mais confiável que batch)
-                for (const doc of semanasSnapshot.docs) {
-                    console.log('Eliminando semana:', doc.id);
-                    await db.collection('semanas').doc(doc.id).delete();
-                }
-
-                console.log('Todas as semanas eliminadas. Eliminando turma...');
-
-                // Depois eliminar a turma
-                await db.collection('turmas').doc(turmaId).delete();
-
-                console.log('Turma eliminada com sucesso!');
-                
-                // Atualizar interface
                 carregarTurmas();
-
-                // Reset se a turma ativa foi eliminada
-                if (turmaAtiva && turmaAtiva.id === turmaId) {
-                    turmaAtiva = null;
-                    semanaAtiva = null;
-                    document.getElementById('cardSemana').style.display = 'none';
-                    document.getElementById('areaPlanificacao').style.display = 'none';
-                }
-
-                alert('Turma eliminada com sucesso!');
-
+                alert('Turma criada com sucesso!');
             } catch (error) {
-                console.error('Erro detalhado ao eliminar turma:', error);
-                
-                let mensagemErro = 'Erro ao eliminar turma:\n\n';
-                
-                if (error.code === 'permission-denied') {
-                    mensagemErro += 'Permissões insuficientes para eliminar.\n\n';
-                    mensagemErro += 'Verifique se as regras do Firestore permitem operações de delete:\n\n';
-                    mensagemErro += 'rules_version = \'2\';\n';
-                    mensagemErro += 'service cloud.firestore {\n';
-                    mensagemErro += '  match /databases/{database}/documents {\n';
-                    mensagemErro += '    match /{document=**} {\n';
-                    mensagemErro += '      allow read, write, delete: if request.auth != null;\n';
-                    mensagemErro += '    }\n';
-                    mensagemErro += '  }\n';
-                    mensagemErro += '}\n';
-                } else if (error.code === 'not-found') {
-                    mensagemErro += 'Turma não encontrada. Pode já ter sido eliminada.';
-                } else {
-                    mensagemErro += error.message;
-                    mensagemErro += '\n\nCódigo do erro: ' + error.code;
-                }
-                
-                alert(mensagemErro);
-            }
-        }
-
-        // Criar semana rápida
-        function criarSemanaRapida(tipo) {
-            const hoje = new Date();
-            let startDate, endDate;
-
-            if (tipo === 'esta') {
-                const dayOfWeek = hoje.getDay(); // 0 = Domingo
-                const monday = hoje.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-                startDate = new Date(hoje.setDate(monday));
-                endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 4); // Segunda a Sexta
-            } else if (tipo === 'proxima') {
-                const dayOfWeek = hoje.getDay();
-                const monday = hoje.getDate() - dayOfWeek + (dayOfWeek === 0 ? 1 : 8);
-                startDate = new Date(hoje.setDate(monday));
-                endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 4);
-            } else if (tipo === 'custom') {
-                document.getElementById('calendarContainer').style.display = 'block';
-                generateCalendar();
-                return;
-            }
-
-            selectedWeekStart = startDate;
-            selectedWeekEnd = endDate;
-            mostrarSemanaSelcionada();
-        }
-
-        // Gerar calendário
-        function generateCalendar() {
-            const year = calendarDate.getFullYear();
-            const month = calendarDate.getMonth();
-            
-            document.getElementById('calendarTitle').textContent = 
-                new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' })
-                    .format(calendarDate);
-
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const startDate = new Date(firstDay);
-            startDate.setDate(startDate.getDate() - firstDay.getDay());
-
-            const calendarGrid = document.querySelector('.calendar-grid');
-            
-            // Remove dias existentes (mantém cabeçalhos)
-            const existingDays = calendarGrid.querySelectorAll('.calendar-day');
-            existingDays.forEach(day => day.remove());
-
-            // Gerar 42 dias (6 semanas)
-            for (let i = 0; i < 42; i++) {
-                const currentDate = new Date(startDate);
-                currentDate.setDate(startDate.getDate() + i);
-
-                const dayElement = document.createElement('div');
-                dayElement.className = 'calendar-day';
-                
-                if (currentDate.getMonth() !== month) {
-                    dayElement.classList.add('other-month');
-                }
-
-                if (isToday(currentDate)) {
-                    dayElement.classList.add('today');
-                }
-
-                dayElement.innerHTML = `
-                    <div class="day-number">${currentDate.getDate()}</div>
-                `;
-
-                dayElement.onclick = () => selectWeek(currentDate);
-                calendarGrid.appendChild(dayElement);
-            }
-        }
-
-        // Verificar se é hoje
-        function isToday(date) {
-            const today = new Date();
-            return date.toDateString() === today.toDateString();
-        }
-
-        // Selecionar semana no calendário (corrigido)
-        function selectWeek(clickedDate) {
-            const dayOfWeek = clickedDate.getDay();
-            const monday = new Date(clickedDate);
-            
-            // Calcular segunda-feira da semana
-            const daysToMonday = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
-            monday.setDate(clickedDate.getDate() + daysToMonday);
-            
-            const friday = new Date(monday);
-            friday.setDate(monday.getDate() + 4);
-
-            selectedWeekStart = new Date(monday);
-            selectedWeekEnd = new Date(friday);
-
-            console.log('Semana selecionada:', selectedWeekStart, 'a', selectedWeekEnd); // Debug
-
-            // Atualizar visual do calendário
-            updateCalendarSelection();
-            mostrarSemanaSelcionada();
-        }
-
-        // Atualizar seleção visual do calendário (corrigido)
-        function updateCalendarSelection() {
-            const days = document.querySelectorAll('.calendar-day');
-            days.forEach(day => {
-                day.classList.remove('selected', 'in-range', 'range-start', 'range-end');
-            });
-
-            if (selectedWeekStart && selectedWeekEnd) {
-                const year = calendarDate.getFullYear();
-                const month = calendarDate.getMonth();
-                
-                days.forEach(day => {
-                    const dayNumber = day.querySelector('.day-number');
-                    if (!dayNumber) return;
-                    
-                    const dayDate = new Date(year, month, parseInt(dayNumber.textContent));
-                    
-                    // Verificar se o dia está no intervalo selecionado
-                    if (dayDate >= selectedWeekStart && dayDate <= selectedWeekEnd) {
-                        day.classList.add('in-range');
-                        
-                        if (dayDate.toDateString() === selectedWeekStart.toDateString()) {
-                            day.classList.add('range-start');
-                        }
-                        if (dayDate.toDateString() === selectedWeekEnd.toDateString()) {
-                            day.classList.add('range-end');
-                        }
-                    }
-                });
-            }
-        }
-
-        // Mostrar semana selecionada
-        function mostrarSemanaSelcionada() {
-            if (!selectedWeekStart || !selectedWeekEnd) return;
-
-            const startStr = selectedWeekStart.toLocaleDateString('pt-PT');
-            const endStr = selectedWeekEnd.toLocaleDateString('pt-PT');
-            
-            document.getElementById('weekRangeText').textContent = 
-                `${startStr} a ${endStr} (Segunda a Sexta-feira)`;
-            document.getElementById('selectedWeek').style.display = 'block';
-        }
-
-        // Confirmar criação da semana (com regras de Firestore mais simples)
-        async function confirmarSemana() {
-            if (!turmaAtiva || !selectedWeekStart || !selectedWeekEnd) {
-                alert('Erro: dados incompletos.');
-                return;
-            }
-
-            const startStr = selectedWeekStart.toLocaleDateString('pt-PT');
-            const endStr = selectedWeekEnd.toLocaleDateString('pt-PT');
-            const descricao = `${startStr} a ${endStr}`;
-
-            try {
-                console.log('A criar semana:', descricao, 'para turma:', turmaAtiva.id);
-                
-                // Dados mais simples para evitar problemas de permissão
-                const semanaData = {
-                    turmaId: turmaAtiva.id,
-                    descricao: descricao,
-                    dataInicio: firebase.firestore.Timestamp.fromDate(selectedWeekStart),
-                    dataFim: firebase.firestore.Timestamp.fromDate(selectedWeekEnd),
-                    criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
-                    planificacao: {},
-                    userId: currentUser.uid // Adicionar userId para as regras de segurança
-                };
-
-                const docRef = await db.collection('semanas').add(semanaData);
-                console.log('Semana criada com ID:', docRef.id);
-
-                // Resetar seleção
-                selectedWeekStart = null;
-                selectedWeekEnd = null;
-                document.getElementById('selectedWeek').style.display = 'none';
-                document.getElementById('calendarContainer').style.display = 'none';
-
-                carregarSemanas();
-                alert('Semana criada com sucesso!');
-                
-            } catch (error) {
-                console.error('Erro detalhado:', error);
-                
-                let mensagemErro = 'Erro ao criar semana: ';
-                
-                if (error.code === 'permission-denied') {
-                    mensagemErro += 'Permissões insuficientes.\n\n';
-                    mensagemErro += 'SOLUÇÃO:\n';
-                    mensagemErro += '1. Vá ao Firebase Console\n';
-                    mensagemErro += '2. Firestore Database → Rules\n';
-                    mensagemErro += '3. Cole estas regras:\n\n';
-                    mensagemErro += 'rules_version = \'2\';\n';
-                    mensagemErro += 'service cloud.firestore {\n';
-                    mensagemErro += '  match /databases/{database}/documents {\n';
-                    mensagemErro += '    match /{document=**} {\n';
-                    mensagemErro += '      allow read, write: if request.auth != null;\n';
-                    mensagemErro += '    }\n';
-                    mensagemErro += '  }\n';
-                    mensagemErro += '}\n\n';
-                    mensagemErro += '4. Clique "Publish"';
-                } else {
-                    mensagemErro += error.message;
-                }
-                
-                alert(mensagemErro);
-            }
-        }
-
-        // Navegar meses do calendário
-        function changeMonth(direction) {
-            calendarDate.setMonth(calendarDate.getMonth() + direction);
-            generateCalendar();
-        }
-
-        // Carregar semanas (corrigido - sem orderBy que causa problemas)
-        async function carregarSemanas() {
-            const lista = document.getElementById('listaSemanas');
-            
-            if (!turmaAtiva) {
-                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Selecione uma turma primeiro</li>';
-                return;
-            }
-
-            try {
-                console.log('A carregar semanas para a turma:', turmaAtiva.id); // Debug
-                
-                // Remover orderBy que pode causar problemas de índice
-                const snapshot = await db.collection('semanas')
-                    .where('turmaId', '==', turmaAtiva.id)
-                    .get();
-
-                console.log('Semanas encontradas:', snapshot.size); // Debug
-
-                lista.innerHTML = '';
-
-                if (snapshot.empty) {
-                    lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma semana criada</li>';
-                    return;
-                }
-
-                const semanas = [];
-                snapshot.forEach((doc) => {
-                    const semanaData = { id: doc.id, ...doc.data() };
-                    semanas.push(semanaData);
-                    console.log('Semana carregada:', semanaData); // Debug
-                });
-
-                // Ordenar por data no cliente
-                semanas.sort((a, b) => {
-                    if (a.criadoEm && b.criadoEm) {
-                        return b.criadoEm.toMillis() - a.criadoEm.toMillis();
-                    }
-                    return 0;
-                });
-
-                semanas.forEach((semana) => {
-                    const li = document.createElement('li');
-                    li.className = 'semana-item';
-                    li.innerHTML = `
-                        <div>
-                            <strong>${semana.descricao}</strong>
-                        </div>
-                        <div class="semana-actions">
-                            <button onclick="abrirPlanificacao('${semana.id}', '${semana.descricao}')" class="btn-secondary">Abrir</button>
-                            <button onclick="eliminarSemana('${semana.id}')" class="btn-danger">Eliminar</button>
-                        </div>
-                    `;
-                    lista.appendChild(li);
-                });
-            } catch (error) {
-                console.error('Erro ao carregar semanas:', error);
-                lista.innerHTML = `<li style="color: red;">Erro: ${error.message}</li>`;
-            }
-        }
-
-        // Abrir planificação (atualizado)
-        function abrirPlanificacao(semanaId, descricao) {
-            if (!turmaAtiva) return;
-
-            semanaAtiva = { id: semanaId, descricao: descricao };
-
-            document.getElementById('tituloAtual').textContent = `Planificação: ${descricao}`;
-            document.getElementById('infoAtual').textContent = `${turmaAtiva.nome} • ${turmaAtiva.ano} • ${turmaAtiva.professor}`;
-            document.getElementById('cabecalhoPlanificacao').textContent = `${turmaAtiva.nome} | ${turmaAtiva.ano} | ${turmaAtiva.professor} | SEMANA: ${descricao}`;
-
-            // Carregar dados salvos
-            carregarDadosPlanificacao();
-
-            document.getElementById('areaPlanificacao').style.display = 'block';
-            mostrarSemanaCompleta();
-
-            // Scroll para a planificação
-            document.getElementById('areaPlanificacao').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Eliminar semana (corrigido)
-        async function eliminarSemana(semanaId) {
-            if (!confirm('Tem a certeza que deseja eliminar esta semana? Esta ação não pode ser desfeita.')) {
-                return;
-            }
-
-            try {
-                console.log('A eliminar semana:', semanaId); // Debug
-                
-                await db.collection('semanas').doc(semanaId).delete();
-
-                alert('Semana eliminada com sucesso!');
-                carregarSemanas();
-
-                // Reset se a semana ativa foi eliminada
-                if (semanaAtiva && semanaAtiva.id === semanaId) {
-                    semanaAtiva = null;
-                    document.getElementById('areaPlanificacao').style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Erro ao eliminar semana:', error);
-                alert('Erro ao eliminar semana: ' + error.message);
-            }
-        }
-
-        // Carregar dados da planificação (atualizado para Firebase)
-        async function carregarDadosPlanificacao() {
-            if (!turmaAtiva || !semanaAtiva) return;
-
-            try {
-                const doc = await db.collection('semanas').doc(semanaAtiva.id).get();
-                if (!doc.exists) return;
-
-                const planificacao = doc.data().planificacao || {};
-
-                // Carregar dados em cada textarea
-                const textareas = document.querySelectorAll('.content-cell textarea');
-                textareas.forEach(textarea => {
-                    const cell = textarea.closest('.content-cell');
-                    const day = cell.getAttribute('data-day');
-                    const time = cell.getAttribute('data-time');
-                    const key = `${day}-${time}`;
-                    
-                    if (planificacao[key]) {
-                        textarea.value = planificacao[key];
-                    } else {
-                        textarea.value = '';
-                    }
-                });
-            } catch (error) {
-                console.error('Erro ao carregar planificação:', error);
-            }
-        }
-
-        // Salvar planificação (atualizado para Firebase)
-        async function salvarPlanificacao() {
-            if (!turmaAtiva || !semanaAtiva) {
-                alert('Selecione uma turma e semana primeiro.');
-                return;
-            }
-
-            try {
-                const planificacao = {};
-
-                // Recolher dados de cada textarea
-                const textareas = document.querySelectorAll('.content-cell textarea');
-                textareas.forEach(textarea => {
-                    const cell = textarea.closest('.content-cell');
-                    const day = cell.getAttribute('data-day');
-                    const time = cell.getAttribute('data-time');
-                    const key = `${day}-${time}`;
-                    
-                    planificacao[key] = textarea.value;
-                });
-
-                await db.collection('semanas').doc(semanaAtiva.id).update({
-                    planificacao: planificacao,
-                    atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                alert('Planificação guardada com sucesso!');
-            } catch (error) {
-                console.error('Erro ao salvar planificação:', error);
-                alert('Erro ao guardar planificação: ' + error.message);
-            }
-        }
-
-        // Mostrar semana completa
-        function mostrarSemanaCompleta() {
-            const headers = document.querySelectorAll('.day-header');
-            const cells = document.querySelectorAll('.day-cell');
-
-            headers.forEach(header => {
-                header.classList.remove('hidden');
-                header.classList.remove('active-day');
-            });
-
-            cells.forEach(cell => {
-                cell.classList.remove('hidden');
-                cell.classList.remove('active-day');
-            });
-        }
-
-        // Mostrar apenas um dia
-        function mostrarDia(dia) {
-            const headers = document.querySelectorAll('.day-header');
-            const cells = document.querySelectorAll('.day-cell');
-
-            headers.forEach(header => {
-                if (header.getAttribute('data-day') === dia) {
-                    header.classList.remove('hidden');
-                    header.classList.add('active-day');
-                } else {
-                    header.classList.add('hidden');
-                    header.classList.remove('active-day');
-                }
-            });
-
-            cells.forEach(cell => {
-                if (cell.getAttribute('data-day') === dia) {
-                    cell.classList.remove('hidden');
-                    cell.classList.add('active-day');
-                } else {
-                    cell.classList.add('hidden');
-                    cell.classList.remove('active-day');
-                }
-            });
-        }
-
-        // Auto-save ao digitar
-        document.addEventListener('input', function(e) {
-            if (e.target.tagName === 'TEXTAREA' && e.target.closest('.content-cell')) {
-                clearTimeout(e.target.autoSaveTimer);
-                e.target.autoSaveTimer = setTimeout(() => {
-                    salvarPlanificacao();
-                }, 3000);
-            }
-        });
-
-        // Carregar dados ao iniciar
-        window.onload = function() {
-            // O Firebase irá gerir automaticamente o estado de autenticação
-        };
-    </script>
-</body>
-</html>
+                console.error('Erro ao criar turma:', error);
+                alert('Erro ao criar turma. Tente novamente.');
