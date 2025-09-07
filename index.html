@@ -3,200 +3,123 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Planificação Semanal - 1º Ciclo</title>
-<!-- Firebase v8 (compat style usado no teu projecto) -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<title>Planificação — Professores 1.º Ciclo</title>
 <style>
-  /* (mantive o teu CSS com pequenas alterações visuais) */
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Arial,Helvetica,sans-serif;background:#f5f7fb;color:#222}
-  .container{max-width:1200px;margin:20px auto;padding:18px}
-  .card{background:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.06);margin-bottom:16px}
-  h1{margin-bottom:10px;color:#2b3650}
-  input,select,textarea,button{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:8px}
-  button{cursor:pointer;background:linear-gradient(90deg,#4f6ef7,#7b4be2);color:#fff;border:none}
-  .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-  .turma-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;background:#f7f9ff;border-left:4px solid #4f6ef7;margin-bottom:8px}
-  .turma-actions button{width:auto;padding:6px 10px;margin-left:8px}
-  .hidden{display:none!important}
+  :root{--blue:#2563eb;--danger:#ef4444}
+  body{font-family:Arial,Helvetica,sans-serif;margin:18px;background:#f6f8fb;color:#111}
+  .wrap{max-width:1100px;margin:0 auto}
+  .card{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 6px 20px rgba(15,23,42,0.06)}
+  h1,h2{margin:0 0 8px 0}
+  input,select,textarea,button{padding:8px;border-radius:8px;border:1px solid #d1d5db}
+  button{background:var(--blue);color:#fff;border:0;cursor:pointer}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .muted{color:#6b7280;font-size:13px}
-  .notice{padding:8px;background:#fff4e5;border:1px solid #ffd6a5;border-radius:8px;margin-bottom:12px}
-  .danger{background:#ffecee;border:1px solid #ffb7c5}
-  textarea{min-height:80px}
-  .schedule-table{width:100%;border-collapse:collapse}
-  .schedule-table th,.schedule-table td{border:1px solid #e6e6e6;padding:6px;vertical-align:top}
-  .time-cell{background:#4f6ef7;color:#fff;font-weight:700;width:140px;text-align:center}
-  .content-cell textarea{width:100%;height:100%;border:0;background:transparent;resize:none}
+  .turma-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#f8fafc;margin-bottom:8px}
+  .turma-actions button{margin-left:8px;padding:6px 10px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  table th,table td{border:1px solid #e6e6e6;padding:6px;vertical-align:top}
+  .time-col{width:160px;background:#eef2ff;font-weight:700;text-align:center}
+  textarea.cell{width:100%;height:70px;border:0;resize:vertical;padding:6px;font-family:inherit}
+  .small {font-size:13px}
+  .danger {background:var(--danger);color:#fff;border:none}
+  .controls {display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
-<div class="container">
-  <div id="authContainer" class="card">
-    <h1>Planificação Escolar — Autenticação</h1>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button onclick="mostrarForm('login')" id="tabLogin" style="flex:1;background:#4f6ef7;color:#fff">Entrar</button>
-      <button onclick="mostrarForm('register')" id="tabRegister" style="flex:1;background:#eee;color:#333">Registar</button>
+<div class="wrap">
+
+  <div id="auth" class="card">
+    <h1>Planificação — Login</h1>
+    <div class="row">
+      <div>
+        <input id="email" type="email" placeholder="Email" />
+      </div>
+      <div>
+        <input id="password" type="password" placeholder="Password" />
+      </div>
     </div>
-
-    <div id="errorMessage" class="notice danger hidden"></div>
-    <div id="successMessage" class="notice hidden"></div>
-
-    <form id="loginForm" style="margin-top:12px">
-      <input id="loginEmail" type="email" placeholder="Email" required>
-      <input id="loginPassword" type="password" placeholder="Palavra-passe" required>
-      <button type="submit">Entrar</button>
-    </form>
-
-    <form id="registerForm" class="hidden" style="margin-top:12px">
-      <input id="registerName" type="text" placeholder="Nome completo" required>
-      <input id="registerEmail" type="email" placeholder="Email" required>
-      <input id="registerPassword" type="password" placeholder="Palavra-passe (min 6)" required>
-      <button type="submit">Registar</button>
-    </form>
-
-    <p class="muted" style="margin-top:12px">Se a tua conta existir mas o Firestore devolver erros de permissões, o aplicativo vai passar para modo local (dados guardados no browser).</p>
+    <div style="margin-top:8px">
+      <button id="btnLogin">Entrar</button>
+      <button id="btnLogout" style="display:none;margin-left:8px;background:#6b7280">Sair</button>
+      <span id="userInfo" class="muted" style="margin-left:12px"></span>
+    </div>
+    <p id="authMsg" class="muted small" style="margin-top:8px">Usa contas criadas no Firebase Auth. Regras Firestore devem permitir o acesso aos teus emails.</p>
   </div>
 
-  <div id="mainContent" class="hidden">
-    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+  <div id="app" class="card" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
-        <h1>Planificação Semanal — 1.º Ciclo</h1>
-        <div class="muted">Utilizador: <span id="userNameDisplay"></span></div>
+        <h2>Gestão de Turmas</h2>
+        <div class="muted small">Coleções usadas: <strong>turmas</strong> → subcoleção <strong>semanas</strong></div>
       </div>
-      <div style="text-align:right">
-        <div id="modeIndicator" class="muted">Modo: <strong id="modeText">cloud</strong></div>
-        <button onclick="logout()" style="margin-top:8px;background:#ef4444">Sair</button>
-      </div>
+      <div class="muted small">Utilizador: <span id="who"></span></div>
     </div>
 
-    <div class="row">
-      <!-- criar turma -->
-      <div class="card">
-        <h3>Nova Turma</h3>
-        <input id="nomeTurma" placeholder="Nome da turma (ex.: 4.º A)">
-        <input id="anoLetivo" placeholder="Ano letivo (ex.: 2024/2025)">
-        <input id="nomeProfessor" placeholder="Professor responsável (nome)">
-        <button id="btnCriarTurma">Criar Turma</button>
+    <!-- criar turma -->
+    <div style="margin-top:12px" class="card">
+      <h3>Criar Turma</h3>
+      <div class="row">
+        <input id="turmaNome" placeholder="Nome da turma (ex.: 4.º A)" />
+        <input id="turmaAno" placeholder="Ano letivo (ex.: 2024/2025)" />
       </div>
-
-      <!-- lista turmas -->
-      <div class="card">
-        <h3>Turmas</h3>
-        <div id="listaTurmas" style="margin-top:8px"></div>
+      <div style="margin-top:8px" class="row">
+        <input id="turmaProf" placeholder="Professor responsável (email ou nome)" />
+        <div>
+          <button id="btnCriarTurma">Criar Turma</button>
+        </div>
       </div>
+      <p id="turmaMsg" class="muted small" style="margin-top:6px"></p>
     </div>
 
-    <!-- semanas e calendário -->
-    <div id="cardSemana" class="card hidden">
-      <h3>Semanas (turma selecionada: <span id="turmaSelecionadaNome"></span>)</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        <button onclick="criarSemanaRapida('esta')">Esta semana</button>
-        <button onclick="criarSemanaRapida('proxima')">Próxima semana</button>
-        <button onclick="criarSemanaRapida('custom')">Escolher no calendário</button>
+    <!-- lista turmas -->
+    <div class="card">
+      <h3>Turmas</h3>
+      <div id="listaTurmas"></div>
+    </div>
+
+    <!-- semanas: selecionar -->
+    <div id="panelSemanas" class="card" style="display:none">
+      <h3>Semanas — Turma: <span id="turmaNomeAtiva"></span></h3>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <label class="small">Início: <input id="semInicio" type="date" /></label>
+        <label class="small">Fim: <input id="semFim" type="date" /></label>
+        <button id="btnGerarGrelha">Gerar Grelha</button>
+        <button id="btnCarregarSemanas" style="background:#6b7280">Carregar semanas</button>
       </div>
 
-      <div id="calendarContainer" class="card hidden">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div id="calendarTitle" class="muted"></div>
-          <div>
-            <button onclick="changeMonth(-1)">‹</button>
-            <button onclick="changeMonth(1)">›</button>
-          </div>
-        </div>
-        <div id="calendarGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px"></div>
-      </div>
-
-      <div id="selectedWeek" class="card hidden" style="margin-top:10px">
-        <div>Semana selecionada: <span id="weekRangeText"></span></div>
-        <div style="margin-top:8px;display:flex;gap:8px">
-          <button id="btnConfirmWeek">Criar esta semana</button>
-        </div>
-      </div>
-
-      <div style="margin-top:16px">
-        <h4>Semanas criadas</h4>
-        <div id="listaSemanas" style="margin-top:8px"></div>
-      </div>
+      <div id="listaSemanas"></div>
     </div>
 
     <!-- area planificacao -->
-    <div id="areaPlanificacao" class="card hidden" style="margin-top:18px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div id="areaPlan" class="card" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <h3 id="tituloAtual">Planificação</h3>
-          <div class="muted" id="infoAtual"></div>
+          <h3 id="tituloSemana">Planificação</h3>
+          <div class="muted small" id="subtituloSemana"></div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="mostrarSemanaCompleta()">Semana completa</button>
-          <button onclick="mostrarDia('segunda')">2ª</button>
-          <button onclick="mostrarDia('terca')">3ª</button>
-          <button onclick="mostrarDia('quarta')">4ª</button>
-          <button onclick="mostrarDia('quinta')">5ª</button>
-          <button onclick="mostrarDia('sexta')">6ª</button>
-          <button onclick="salvarPlanificacao()" style="background:#10b981">Guardar</button>
+        <div class="controls">
+          <button id="btnVerSemana">Ver semana</button>
+          <select id="selectDia" style="min-width:160px">
+            <option value="">Ver dia específico</option>
+          </select>
+          <button id="btnEliminarSemana" class="danger">Eliminar semana</button>
         </div>
       </div>
 
-      <div class="schedule-container">
-        <table class="schedule-table">
-          <thead>
-            <tr>
-              <th>Horas</th>
-              <th data-day="segunda" class="day-header">2ª feira</th>
-              <th data-day="terca" class="day-header">3ª feira</th>
-              <th data-day="quarta" class="day-header">4ª feira</th>
-              <th data-day="quinta" class="day-header">5ª feira</th>
-              <th data-day="sexta" class="day-header">6ª feira</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="time-cell">9h00–10h30</td>
-              <td class="content-cell day-cell" data-day="segunda" data-time="0900-1030"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="terca" data-time="0900-1030"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="quarta" data-time="0900-1030"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="quinta" data-time="0900-1030"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="sexta" data-time="0900-1030"><textarea></textarea></td>
-            </tr>
-            <tr>
-              <td class="time-cell">11h00–12h30</td>
-              <td class="content-cell day-cell" data-day="segunda" data-time="1100-1230"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="terca" data-time="1100-1230"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="quarta" data-time="1100-1230"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="quinta" data-time="1100-1230"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="sexta" data-time="1100-1230"><textarea></textarea></td>
-            </tr>
-            <tr>
-              <td class="time-cell">13h45–15h30</td>
-              <td class="content-cell day-cell" data-day="segunda" data-time="1345-1530"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="terca" data-time="1345-1530"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="quarta" data-time="1345-1530"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="quinta" data-time="1345-1530"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="sexta" data-time="1345-1530"><textarea></textarea></td>
-            </tr>
-            <tr>
-              <td class="time-cell">16h00–17h15</td>
-              <td class="content-cell day-cell" data-day="segunda" data-time="1600-1715"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="terca" data-time="1600-1715"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="quarta" data-time="1600-1715"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="quinta" data-time="1600-1715"><textarea></textarea></td>
-              <td class="content-cell day-cell" data-day="sexta" data-time="1600-1715"><textarea></textarea></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <div id="grelhaWrapper" style="overflow:auto;margin-top:12px"></div>
     </div>
 
   </div>
 </div>
 
-<script>
-/* ---------------------------
-   Configuração Firebase
-   (mantive a tua config)
-   --------------------------- */
+<script type="module">
+/* ====== Firebase modular (imports) ====== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, setDoc, getDoc, getDocs, query, where, orderBy, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+/* ====== Config - usa a tua config (projeto bddespesas) ====== */
 const firebaseConfig = {
   apiKey: "AIzaSyAC9EguGeZd50W1jADEx73aJKGacFeGk9o",
   authDomain: "bddespesas.firebaseapp.com",
@@ -206,665 +129,395 @@ const firebaseConfig = {
   appId: "1:521648200265:web:82fc2c97f02e185478fd98",
   measurementId: "G-P7NX1T9RVE"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
 
-/* ---------------------------
-   Estado da app
-   --------------------------- */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* ====== Constantes ====== */
+const HORARIOS = ["09:05-10:30","11:00-12:30","13:45-15:30","16:00-17:15"];
+
+/* ====== UI refs ====== */
+const el = id => document.getElementById(id);
+const who = el('who');
+const authMsg = el('authMsg');
+const btnLogin = el('btnLogin');
+const btnLogout = el('btnLogout');
+const btnCriarTurma = el('btnCriarTurma');
+const listaTurmas = el('listaTurmas');
+const turmaNomeAtiva = el('turmaNomeAtiva');
+const panelSemanas = el('panelSemanas');
+const listaSemanas = el('listaSemanas');
+const semInicio = el('semInicio'), semFim = el('semFim'), btnGerarGrelha = el('btnGerarGrelha');
+const areaPlan = el('areaPlan'), tituloSemana = el('tituloSemana'), subtituloSemana = el('subtituloSemana');
+const grelhaWrapper = el('grelhaWrapper'), btnVerSemana = el('btnVerSemana'), selectDia = el('selectDia');
+const btnEliminarSemana = el('btnEliminarSemana'), btnCarregarSemanas = el('btnCarregarSemanas');
+const turmaMsg = el('turmaMsg');
+
+/* ====== Estado ====== */
 let currentUser = null;
-let turmaAtiva = null;        // { id, nome, ano, professor, isLocal }
-let semanaAtiva = null;       // { id, descricao, isLocal }
-let selectedWeekStart = null;
-let selectedWeekEnd = null;
-let calendarDate = new Date();
-let localFallback = false;    // se true => trabalhar em localStorage
+let turmaAtiva = null;   // { id, nome, ano, professor }
+let semanaAtiva = null;  // { id, inicio, fim }
 
-/* ---------------------------
-   Helpers localStorage
-   --------------------------- */
-function getLocalTurmas(){ return JSON.parse(localStorage.getItem('local_turmas')||'[]'); }
-function saveLocalTurmas(arr){ localStorage.setItem('local_turmas', JSON.stringify(arr)); }
-function getLocalSemanas(){ return JSON.parse(localStorage.getItem('local_semanas')||'[]'); }
-function saveLocalSemanas(arr){ localStorage.setItem('local_semanas', JSON.stringify(arr)); }
-
-/* ---------------------------
-   UI utilitários
-   --------------------------- */
-function showError(msg){ const el=document.getElementById('errorMessage'); el.textContent = msg; el.classList.remove('hidden'); }
-function showSuccess(msg){ const el=document.getElementById('successMessage'); el.textContent = msg; el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'),3000); }
-function clearMessages(){ document.getElementById('errorMessage').classList.add('hidden'); document.getElementById('successMessage').classList.add('hidden'); }
-
-/* Indica modo (cloud/local) */
-function setModeIndicator(){
-  document.getElementById('modeText').textContent = localFallback ? 'local' : 'cloud';
-}
-
-/* ---------------------------
-   Autenticação
-   --------------------------- */
-function mostrarForm(tipo){
-  clearMessages();
-  document.getElementById('loginForm').classList.toggle('hidden', tipo!=='login');
-  document.getElementById('registerForm').classList.toggle('hidden', tipo!=='register');
-  document.getElementById('tabLogin').style.background = tipo==='login' ? '#4f6ef7' : '#eee';
-  document.getElementById('tabLogin').style.color = tipo==='login' ? '#fff' : '#333';
-  document.getElementById('tabRegister').style.background = tipo==='register' ? '#4f6ef7' : '#eee';
-  document.getElementById('tabRegister').style.color = tipo==='register' ? '#fff' : '#333';
-}
-
-document.getElementById('loginForm').addEventListener('submit', async function(e){
-  e.preventDefault(); clearMessages();
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  if(!email || !password){ showError('Preencha email e palavra-passe'); return; }
+/* ====== Autenticação ====== */
+btnLogin.addEventListener('click', async () => {
+  authMsg.textContent = '';
+  const email = el('email').value.trim();
+  const password = el('password').value;
+  if(!email || !password){ authMsg.textContent = 'Preencha email e password.'; return; }
   try{
-    await auth.signInWithEmailAndPassword(email,password);
-    showSuccess('Login efetuado'); // onAuthStateChanged fará o resto
+    await signInWithEmailAndPassword(auth, email, password);
   }catch(err){
-    console.error('Login error',err);
-    showError(err.message || 'Erro no login');
+    console.error(err);
+    authMsg.textContent = err.message || 'Erro no login.';
   }
 });
-
-document.getElementById('registerForm').addEventListener('submit', async function(e){
-  e.preventDefault(); clearMessages();
-  const name = document.getElementById('registerName').value.trim();
-  const email = document.getElementById('registerEmail').value.trim();
-  const password = document.getElementById('registerPassword').value;
-  if(!name||!email||!password){ showError('Preencha todos os campos'); return; }
-  if(password.length < 6){ showError('Password deve ter pelo menos 6 caracteres'); return; }
-  try{
-    const userCred = await auth.createUserWithEmailAndPassword(email,password);
-    await userCred.user.updateProfile({ displayName: name });
-    showSuccess('Conta criada. Já pode entrar.');
-  }catch(err){
-    console.error('Register error',err);
-    showError(err.message || 'Erro no registo');
-  }
+btnLogout.addEventListener('click', async () => {
+  await signOut(auth);
 });
 
-auth.onAuthStateChanged(async function(user){
+/* onAuthStateChanged */
+onAuthStateChanged(auth, user => {
   currentUser = user;
   if(user){
-    // logged in
-    document.getElementById('authContainer').classList.add('hidden');
-    document.getElementById('mainContent').classList.remove('hidden');
-    document.getElementById('userNameDisplay').textContent = user.displayName || user.email;
-    // reset localFallback flag and try cloud
-    localFallback = false;
-    setModeIndicator();
-    await carregarTurmas();
+    el('auth').style.display = 'none';
+    el('app').style.display = 'block';
+    who.textContent = user.email;
+    loadTurmas();
   } else {
-    // show auth
-    document.getElementById('authContainer').classList.remove('hidden');
-    document.getElementById('mainContent').classList.add('hidden');
+    el('auth').style.display = 'block';
+    el('app').style.display = 'none';
   }
 });
 
-function logout(){ if(confirm('Sair?')) auth.signOut(); }
-
-/* ---------------------------
-   Operações Firestore com fallback local
-   - all firestore writes/reads wrapped to detect permission errors
-   --------------------------- */
-function isPermissionError(err){
-  if(!err) return false;
-  const code = err.code || '';
-  return code === 'permission-denied' || code === 'unauthenticated' || code === 'failed-precondition';
-}
-
-/* ---------------------------
-   Criar turma (tenta Firestore, se falhar grava local)
-   --------------------------- */
-document.getElementById('btnCriarTurma').addEventListener('click', async function(){
-  clearMessages();
-  if(!currentUser){
-    showError('Tem de estar autenticado para criar turma.');
-    return;
-  }
-  const nome = document.getElementById('nomeTurma').value.trim();
-  const ano = document.getElementById('anoLetivo').value.trim();
-  const professor = document.getElementById('nomeProfessor').value.trim();
-  if(!nome||!ano||!professor){ showError('Preencha todos os campos da turma'); return; }
-
-  // tenta Firestore
+/* ====== Turmas ====== */
+btnCriarTurma.addEventListener('click', async () => {
+  turmaMsg.textContent = '';
+  if(!currentUser) { turmaMsg.textContent = 'Faça login primeiro.'; return; }
+  const nome = el('turmaNome').value.trim();
+  const ano = el('turmaAno').value.trim();
+  const prof = el('turmaProf').value.trim();
+  if(!nome || !ano || !prof){ turmaMsg.textContent = 'Preencha todos os campos.'; return; }
   try{
-    const ref = await db.collection('turmas').add({
-      userId: currentUser.uid,
-      nome, ano, professor,
-      criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+    const docRef = await addDoc(collection(db,'turmas'), {
+      nome, ano, professor: prof, owner: currentUser.uid, createdAt: new Date().toISOString()
     });
-    showSuccess('Turma criada no Firestore');
-    document.getElementById('nomeTurma').value='';
-    document.getElementById('anoLetivo').value='';
-    document.getElementById('nomeProfessor').value='';
-    await carregarTurmas();
-    return;
+    el('turmaNome').value=''; el('turmaAno').value=''; el('turmaProf').value='';
+    loadTurmas();
   }catch(err){
-    console.warn('Firestore create turma falhou:', err && err.code, err && err.message);
-    if(isPermissionError(err)){
-      localFallback = true;
-      setModeIndicator();
-      showError('Sem permissões para gravar no Firestore — a app vai usar armazenamento local (dados só no browser).');
-      // fallback local
-      const arr = getLocalTurmas();
-      const id = 'local-' + Date.now();
-      arr.unshift({ id, nome, ano, professor, criadoEm: (new Date()).toISOString() });
-      saveLocalTurmas(arr);
-      showSuccess('Turma criada localmente');
-      document.getElementById('nomeTurma').value='';
-      document.getElementById('anoLetivo').value='';
-      document.getElementById('nomeProfessor').value='';
-      carregarTurmas(); // carrega do local
-      return;
-    } else {
-      showError('Erro ao criar turma: ' + (err.message||err));
-      return;
-    }
+    console.error('Erro criar turma',err);
+    turmaMsg.textContent = 'Erro ao criar turma: ' + (err.message||err);
   }
 });
 
-/* ---------------------------
-   Carregar turmas (tenta Firestore primeiro)
-   --------------------------- */
-async function carregarTurmas(){
-  const container = document.getElementById('listaTurmas');
-  container.innerHTML = '<div class="muted">A carregar...</div>';
-  if(!currentUser){
-    container.innerHTML = '<div class="muted">Faça login para ver as turmas.</div>';
-    return;
-  }
-
-  // tenta Firestore
+/* loadTurmas - mostra lista e botoes */
+async function loadTurmas(){
+  listaTurmas.innerHTML = 'A carregar...';
   try{
-    const snapshot = await db.collection('turmas')
-      .where('userId','==', currentUser.uid)
-      .orderBy('criadoEm','desc')
-      .get();
-    // se ok, mostramos só turmas remotas
-    if(snapshot.empty){
-      container.innerHTML = '<div class="muted">Nenhuma turma criada (na cloud).</div>';
-    } else {
-      container.innerHTML = '';
-      snapshot.forEach(doc => {
-        const t = { id: doc.id, ...doc.data(), isLocal:false };
-        const el = criarElementoTurma(t);
-        container.appendChild(el);
-      });
-    }
-    // keep mode cloud
-    localFallback = false;
-    setModeIndicator();
+    const q = query(collection(db,'turmas'), orderBy('createdAt','desc'));
+    const snap = await getDocs(q);
+    listaTurmas.innerHTML = '';
+    if(snap.empty){ listaTurmas.innerHTML = '<div class="muted">Nenhuma turma.</div>'; return; }
+    snap.forEach(d => {
+      const data = d.data();
+      const id = d.id;
+      const div = document.createElement('div');
+      div.className = 'turma-item';
+      div.innerHTML = `
+        <div>
+          <strong>${escapeHtml(data.nome)}</strong><br>
+          <span class="muted small">${escapeHtml(data.ano)} • ${escapeHtml(data.professor)}</span>
+        </div>
+        <div class="turma-actions">
+          <button data-id="${id}" class="select">Abrir</button>
+          <button data-id="${id}" class="delete" style="background:#ef4444">Eliminar</button>
+        </div>
+      `;
+      div.querySelector('.select').addEventListener('click', ()=> selectTurma({ id, ...data }));
+      div.querySelector('.delete').addEventListener('click', ()=> deleteTurma(id));
+      listaTurmas.appendChild(div);
+    });
   }catch(err){
-    console.warn('Erro ao carregar turmas cloud:', err && err.code);
-    if(isPermissionError(err)){
-      // fallback local
-      localFallback = true;
-      setModeIndicator();
-      showError('Sem permissões para aceder ao Firestore — a app vai usar dados locais.');
-      const local = getLocalTurmas();
-      if(local.length===0){
-        container.innerHTML = '<div class="muted">Nenhuma turma (local)</div>';
-      } else {
-        container.innerHTML = '';
-        local.forEach(t => {
-          const el = criarElementoTurma(Object.assign({},t,{isLocal:true}));
-          container.appendChild(el);
-        });
-      }
-    } else {
-      container.innerHTML = `<div class="muted">Erro ao carregar turmas: ${err.message || err}</div>`;
-    }
+    console.error('Erro loadTurmas',err);
+    listaTurmas.innerHTML = '<div class="muted">Erro ao carregar turmas.</div>';
   }
 }
 
-/* ---------------------------
-   Cria elemento DOM para uma turma
-   --------------------------- */
-function criarElementoTurma(t){
-  const div = document.createElement('div');
-  div.className = 'turma-item';
-  div.innerHTML = `
-    <div>
-      <strong>${escapeHtml(t.nome)}</strong><br>
-      <small class="muted">${escapeHtml(t.ano)} • ${escapeHtml(t.professor)} ${t.isLocal? ' (local)':''}</small>
-    </div>
-    <div class="turma-actions">
-      <button data-id="${t.id}" class="select-btn">Selecionar</button>
-      <button data-id="${t.id}" class="delete-btn" style="background:#ef4444">Eliminar</button>
-    </div>
-  `;
-  // selecionar
-  div.querySelector('.select-btn').addEventListener('click', ()=> selecionarTurma(t));
-  // eliminar
-  div.querySelector('.delete-btn').addEventListener('click', ()=> eliminarTurma(t));
-  return div;
-}
-
-/* ---------------------------
-   Selecionar turma (t: {id,nome,ano,professor,isLocal})
-   --------------------------- */
-function selecionarTurma(t){
+/* selectTurma */
+function selectTurma(t){
   turmaAtiva = t;
-  document.getElementById('turmaSelecionadaNome').textContent = t.nome + (t.isLocal? ' (local)':'');
-  document.getElementById('cardSemana').classList.remove('hidden');
-  document.getElementById('areaPlanificacao').classList.add('hidden');
-  carregarSemanas();
-  showSuccess(`Turma selecionada: ${t.nome}`);
+  turmaNomeAtiva.textContent = t.nome;
+  panelSemanas.style.display = 'block';
+  listaSemanas.innerHTML = '';
+  areaPlan.style.display = 'none';
+  loadSemanas();
 }
 
-/* ---------------------------
-   Eliminar turma (t can be object or id)
-   if t.isLocal true => delete in localStorage
-   else attempt firestore delete (with semanas)
-   --------------------------- */
-async function eliminarTurma(tOrId){
-  let id, isLocal=false;
-  if(typeof tOrId === 'string'){ id = tOrId; } else { id = tOrId.id; isLocal = !!tOrId.isLocal; }
-  if(!confirm('Eliminar turma e todas as suas semanas?')) return;
-
-  if(isLocal || localFallback){
-    // local removal
-    const turmas = getLocalTurmas();
-    const idx = turmas.findIndex(x=>x.id===id);
-    if(idx>=0){ turmas.splice(idx,1); saveLocalTurmas(turmas); }
-    // remove local semanas
-    let semanas = getLocalSemanas();
-    semanas = semanas.filter(s=>s.turmaId !== id);
-    saveLocalSemanas(semanas);
-    if(turmaAtiva && turmaAtiva.id===id) { turmaAtiva=null; document.getElementById('cardSemana').classList.add('hidden'); document.getElementById('areaPlanificacao').classList.add('hidden'); }
-    showSuccess('Turma e semanas (local) eliminadas.');
-    carregarTurmas();
-    return;
-  }
-
-  // try cloud
+/* deleteTurma - apaga subcoleção semanas e depois turma doc */
+async function deleteTurma(id){
+  if(!confirm('Eliminar esta turma e todas as semanas?')) return;
   try{
-    // remove semanas in batch
-    const semanasSnap = await db.collection('semanas').where('turmaId','==', id).get();
-    const batch = db.batch();
-    semanasSnap.forEach(doc => batch.delete(doc.ref));
-    batch.delete(db.collection('turmas').doc(id));
-    await batch.commit();
-    if(turmaAtiva && turmaAtiva.id===id){ turmaAtiva=null; document.getElementById('cardSemana').classList.add('hidden'); document.getElementById('areaPlanificacao').classList.add('hidden'); }
-    showSuccess('Turma e semanas eliminadas (cloud).');
-    carregarTurmas();
+    // apagar semanas (leitura e apagar cada)
+    const semSnap = await getDocs(collection(db,'turmas',id,'semanas'));
+    const deletes = [];
+    semSnap.forEach(sdoc => deletes.push(deleteDoc(doc(db,'turmas',id,'semanas',sdoc.id))));
+    await Promise.all(deletes);
+    // apagar turma
+    await deleteDoc(doc(db,'turmas',id));
+    if(turmaAtiva && turmaAtiva.id === id) { turmaAtiva = null; panelSemanas.style.display = 'none'; areaPlan.style.display = 'none'; }
+    loadTurmas();
   }catch(err){
-    console.error('Erro eliminar turma cloud',err);
-    if(isPermissionError(err)){
-      // fallback local
-      localFallback = true; setModeIndicator();
-      showError('Sem permissões para eliminar no Firestore — a app usará armazenamento local.');
-      // try local deletion anyway (in case there are local entries)
-      const turmas = getLocalTurmas(); const idx = turmas.findIndex(x=>x.id===id); if(idx>=0){ turmas.splice(idx,1); saveLocalTurmas(turmas); }
-      let semanas = getLocalSemanas(); semanas = semanas.filter(s=>s.turmaId !== id); saveLocalSemanas(semanas);
-      carregarTurmas();
-    } else {
-      showError('Erro ao eliminar turma: ' + (err.message||err));
-    }
+    console.error('Erro deleteTurma',err);
+    alert('Erro ao eliminar turma: ' + (err.message||err));
   }
 }
 
-/* ---------------------------
-   Semanas: criar (confirmarSemana) / carregar / abrir / eliminar
-   - fallback local se necessário
-   --------------------------- */
-function criarSemanaRapida(tipo){
-  const hoje = new Date();
-  let monday;
-  if(tipo === 'esta'){
-    const dayOfWeek = hoje.getDay(); // 0 dom...6 sab
-    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    monday = new Date(hoje); monday.setDate(hoje.getDate() + diff);
-  } else if(tipo === 'proxima'){
-    const dayOfWeek = hoje.getDay();
-    const diff = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
-    monday = new Date(hoje); monday.setDate(hoje.getDate() + diff);
-  } else { // custom
-    document.getElementById('calendarContainer').classList.remove('hidden');
-    generateCalendar();
-    return;
-  }
-  const friday = new Date(monday); friday.setDate(monday.getDate() + 4);
-  selectedWeekStart = monday; selectedWeekEnd = friday;
-  mostrarSemanaSelecionada();
-}
-
-function generateCalendar(){
-  const year = calendarDate.getFullYear();
-  const month = calendarDate.getMonth();
-  document.getElementById('calendarTitle').textContent = new Intl.DateTimeFormat('pt-PT',{month:'long',year:'numeric'}).format(calendarDate);
-  const first = new Date(year, month, 1);
-  const start = new Date(first); start.setDate(first.getDate() - first.getDay());
-  const grid = document.getElementById('calendarGrid');
-  grid.innerHTML = '';
-  for(let i=0;i<42;i++){
-    const d = new Date(start); d.setDate(start.getDate() + i);
-    const el = document.createElement('div');
-    el.style.padding = '10px';
-    el.style.borderRadius = '8px';
-    el.style.textAlign = 'center';
-    el.style.cursor = 'pointer';
-    el.textContent = d.getDate();
-    if(d.getMonth() !== month) el.style.opacity = '0.4';
-    if(isSameDay(d,new Date())) el.style.background = '#e0f2ff';
-    el.onclick = ()=> { selectWeek(d); };
-    grid.appendChild(el);
-  }
-}
-
-function isSameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
-
-function changeMonth(dir){ calendarDate.setMonth(calendarDate.getMonth()+dir); generateCalendar(); }
-
-function selectWeek(clickedDate){
-  const dayOfWeek = clickedDate.getDay();
-  const monday = new Date(clickedDate); monday.setDate(clickedDate.getDate() - dayOfWeek + (dayOfWeek===0?-6:1));
-  const friday = new Date(monday); friday.setDate(monday.getDate() + 4);
-  selectedWeekStart = monday; selectedWeekEnd = friday;
-  mostrarSemanaSelecionada();
-}
-
-function mostrarSemanaSelecionada(){
-  if(!selectedWeekStart || !selectedWeekEnd) return;
-  document.getElementById('weekRangeText').textContent = `${selectedWeekStart.toLocaleDateString('pt-PT')} → ${selectedWeekEnd.toLocaleDateString('pt-PT')}`;
-  document.getElementById('selectedWeek').classList.remove('hidden');
-  // attach confirm handler
-  const btn = document.getElementById('btnConfirmWeek');
-  btn.onclick = confirmarSemana;
-}
-
-/* confirmarSemana: cria semana no cloud ou local */
-async function confirmarSemana(){
-  if(!turmaAtiva){ showError('Selecione uma turma antes.'); return; }
-  if(!selectedWeekStart || !selectedWeekEnd){ showError('Selecione uma semana.'); return; }
-  const descricao = `${selectedWeekStart.toLocaleDateString('pt-PT')} a ${selectedWeekEnd.toLocaleDateString('pt-PT')}`;
-  // try cloud
+/* ====== Semanas ====== */
+/* loadSemanas */
+async function loadSemanas(){
+  listaSemanas.innerHTML = 'A carregar semanas...';
   try{
-    const ref = await db.collection('semanas').add({
-      turmaId: turmaAtiva.id,
-      descricao,
-      dataInicio: firebase.firestore.Timestamp.fromDate(selectedWeekStart),
-      dataFim: firebase.firestore.Timestamp.fromDate(selectedWeekEnd),
-      criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
-      planificacao: {}
+    const q = query(collection(db,'turmas',turmaAtiva.id,'semanas'), orderBy('createdAt','desc'));
+    const snap = await getDocs(q);
+    listaSemanas.innerHTML = '';
+    if(snap.empty){ listaSemanas.innerHTML = '<div class="muted">Nenhuma semana criada.</div>'; return; }
+    snap.forEach(d => {
+      const data = d.data();
+      const id = d.id;
+      const div = document.createElement('div');
+      div.className = 'turma-item';
+      div.innerHTML = `<div><strong>${escapeHtml(data.rangeText || data.inicio + ' → ' + data.fim)}</strong><br><span class="muted small">${data.createdAt || ''}</span></div>
+        <div class="turma-actions">
+          <button data-id="${id}" class="open">Abrir</button>
+          <button data-id="${id}" class="delete" style="background:#ef4444">Eliminar</button>
+        </div>`;
+      div.querySelector('.open').addEventListener('click', ()=> openSemana({ id, ...data }));
+      div.querySelector('.delete').addEventListener('click', ()=> deleteSemana(id));
+      listaSemanas.appendChild(div);
     });
-    showSuccess('Semana criada (cloud)');
-    selectedWeekStart = selectedWeekEnd = null;
-    document.getElementById('selectedWeek').classList.add('hidden');
-    document.getElementById('calendarContainer').classList.add('hidden');
-    carregarSemanas();
-    return;
   }catch(err){
-    console.warn('Erro criar semana cloud',err);
-    if(isPermissionError(err)){
-      localFallback = true; setModeIndicator();
-      showError('Sem permissões para criar semana no Firestore — a app vai guardar localmente.');
-      // create local semana
-      const semanas = getLocalSemanas();
-      const id = 'local-' + Date.now();
-      semanas.unshift({
-        id, turmaId: turmaAtiva.id, descricao,
-        dataInicio: selectedWeekStart.toISOString(), dataFim: selectedWeekEnd.toISOString(),
-        criadoEm: (new Date()).toISOString(), planificacao: {}
-      });
-      saveLocalSemanas(semanas);
-      showSuccess('Semana criada localmente');
-      selectedWeekStart = selectedWeekEnd = null;
-      document.getElementById('selectedWeek').classList.add('hidden');
-      document.getElementById('calendarContainer').classList.add('hidden');
-      carregarSemanas();
-      return;
-    } else {
-      showError('Erro ao criar semana: ' + (err.message||err));
-    }
+    console.error('Erro loadSemanas',err);
+    listaSemanas.innerHTML = '<div class="muted">Erro ao carregar semanas.</div>';
   }
 }
 
-/* carregarSemanas: carrega semanas da turma selecionada (cloud preferencial, fallback local) */
-async function carregarSemanas(){
-  const lista = document.getElementById('listaSemanas'); lista.innerHTML = '';
-  if(!turmaAtiva){ lista.innerHTML = '<div class="muted">Selecione uma turma</div>'; return; }
-  // try cloud query
-  try{
-    const snap = await db.collection('semanas').where('turmaId','==',turmaAtiva.id).orderBy('criadoEm','desc').get();
-    if(snap.empty){ lista.innerHTML = '<div class="muted">Nenhuma semana (cloud)</div>'; }
-    snap.forEach(doc => {
-      const s = { id: doc.id, ...doc.data(), isLocal:false };
-      const el = criarElementoSemana(s);
-      lista.appendChild(el);
-    });
-    localFallback = false; setModeIndicator();
-  }catch(err){
-    console.warn('Erro carregar semanas cloud',err);
-    if(isPermissionError(err)){
-      localFallback = true; setModeIndicator();
-      showError('Sem permissões para ler semanas no Firestore — a app usará semanas locais.');
-      const local = getLocalSemanas().filter(s=>s.turmaId === turmaAtiva.id);
-      if(local.length===0) lista.innerHTML = '<div class="muted">Nenhuma semana (local)</div>';
-      else local.forEach(s => lista.appendChild(criarElementoSemana(Object.assign({},s,{isLocal:true}))));
-    } else {
-      lista.innerHTML = `<div class="muted">Erro ao carregar semanas: ${err.message||err}</div>`;
-    }
-  }
-}
-
-function criarElementoSemana(s){
-  const div = document.createElement('div');
-  div.className = 'semana-item';
-  div.innerHTML = `
-    <div><strong>${escapeHtml(s.descricao)}</strong></div>
-    <div class="semana-actions">
-      <button data-id="${s.id}" class="open-btn">Abrir</button>
-      <button data-id="${s.id}" class="edit-btn">Editar</button>
-      <button data-id="${s.id}" class="del-btn" style="background:#ef4444">Eliminar</button>
-    </div>
-  `;
-  div.querySelector('.open-btn').addEventListener('click', ()=> abrirPlanificacao(s));
-  div.querySelector('.edit-btn').addEventListener('click', ()=> {
-    // if cloud -> call editarSemana with cloud params; if local -> reconstruct
-    if(s.isLocal){
-      const sd = new Date(s.dataInicio); const ed = new Date(s.dataFim);
-      editarSemanaLocal(s.id, s.descricao, sd, ed);
-    } else {
-      // cloud: s.dataInicio is Timestamp
-      editarSemanaCloud(s.id, s.descricao, s.dataInicio.toDate(), s.dataFim.toDate());
-    }
-  });
-  div.querySelector('.del-btn').addEventListener('click', ()=> eliminarSemana(s));
-  return div;
-}
-
-/* editar semana - separate paths for cloud/local */
-function editarSemanaCloud(semanaId, descricao, dStart, dEnd){
-  selectedWeekStart = dStart; selectedWeekEnd = dEnd;
-  document.getElementById('calendarContainer').classList.remove('hidden'); generateCalendar(); mostrarSemanaSelecionada();
-  const btn = document.getElementById('btnConfirmWeek');
-  btn.textContent = 'Atualizar semana';
-  btn.onclick = async ()=>{
-    try{
-      await db.collection('semanas').doc(semanaId).update({
-        descricao: `${selectedWeekStart.toLocaleDateString('pt-PT')} a ${selectedWeekEnd.toLocaleDateString('pt-PT')}`,
-        dataInicio: firebase.firestore.Timestamp.fromDate(selectedWeekStart),
-        dataFim: firebase.firestore.Timestamp.fromDate(selectedWeekEnd),
-        atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      showSuccess('Semana atualizada (cloud)');
-      document.getElementById('selectedWeek').classList.add('hidden'); document.getElementById('calendarContainer').classList.add('hidden');
-      btn.textContent = 'Criar esta semana';
-      btn.onclick = confirmarSemana;
-      carregarSemanas();
-    }catch(err){
-      console.error('Erro atualizar semana cloud',err);
-      if(isPermissionError(err)){ localFallback=true; setModeIndicator(); showError('Sem permissões para atualizar semana no Firestore.'); }
-      else showError('Erro ao atualizar: ' + err.message);
-    }
-  };
-}
-
-function editarSemanaLocal(semanaId, descricao, dStart, dEnd){
-  selectedWeekStart = dStart; selectedWeekEnd = dEnd;
-  document.getElementById('calendarContainer').classList.remove('hidden'); generateCalendar(); mostrarSemanaSelecionada();
-  const btn = document.getElementById('btnConfirmWeek');
-  btn.textContent = 'Atualizar semana (local)';
-  btn.onclick = ()=>{
-    let semanas = getLocalSemanas();
-    const idx = semanas.findIndex(s=>s.id===semanaId);
-    if(idx<0){ showError('Semana local não encontrada'); return; }
-    semanas[idx].descricao = `${selectedWeekStart.toLocaleDateString('pt-PT')} a ${selectedWeekEnd.toLocaleDateString('pt-PT')}`;
-    semanas[idx].dataInicio = selectedWeekStart.toISOString();
-    semanas[idx].dataFim = selectedWeekEnd.toISOString();
-    semanas[idx].atualizadoEm = (new Date()).toISOString();
-    saveLocalSemanas(semanas);
-    showSuccess('Semana local atualizada');
-    document.getElementById('selectedWeek').classList.add('hidden'); document.getElementById('calendarContainer').classList.add('hidden');
-    btn.textContent = 'Criar esta semana';
-    btn.onclick = confirmarSemana;
-    carregarSemanas();
-  };
-}
-
-/* abrirPlanificacao(s) where s may be cloud or local */
-async function abrirPlanificacao(s){
-  // s can be object (with id) or id param; ensure s object
-  const semana = s;
-  semanaAtiva = { id: semana.id, descricao: semana.descricao, isLocal: !!semana.isLocal };
-  document.getElementById('tituloAtual').textContent = `Planificação: ${semana.descricao}`;
-  document.getElementById('infoAtual').textContent = `${turmaAtiva.nome} • ${turmaAtiva.ano} • ${turmaAtiva.professor}`;
-  document.getElementById('areaPlanificacao').classList.remove('hidden');
-  // load data (cloud or local)
-  if(semanaAtiva.isLocal || localFallback){
-    // local
-    const local = getLocalSemanas().find(x=>x.id===semana.id);
-    const plan = local && local.planificacao ? local.planificacao : {};
-    fillPlanGrid(plan);
-  } else {
-    try{
-      const docSnap = await db.collection('semanas').doc(semana.id).get();
-      if(!docSnap.exists){ showError('Documento da semana não existe (cloud)'); return; }
-      const plan = docSnap.data().planificacao || {};
-      fillPlanGrid(plan);
-    }catch(err){
-      console.error('Erro ler planificacao cloud',err);
-      if(isPermissionError(err)){ localFallback=true; setModeIndicator(); showError('Sem permissões para ler planificação no Firestore.'); }
-      else showError('Erro ao carregar planificação: ' + err.message);
-    }
-  }
-  // show week full by default
-  mostrarSemanaCompleta();
-}
-
-function fillPlanGrid(planObj){
-  const textareas = document.querySelectorAll('.content-cell textarea');
-  textareas.forEach(t=>{
-    const cell = t.closest('.content-cell');
-    const key = `${cell.getAttribute('data-day')}-${cell.getAttribute('data-time')}`;
-    t.value = planObj[key] || '';
-  });
-}
-
-/* eliminarSemana (cloud/local) */
-async function eliminarSemana(sOrId){
-  const id = typeof sOrId === 'string' ? sOrId : sOrId.id;
+/* deleteSemana */
+async function deleteSemana(semId){
   if(!confirm('Eliminar esta semana?')) return;
-  // local?
-  if(sOrId.isLocal || localFallback){
-    let semanas = getLocalSemanas();
-    semanas = semanas.filter(s=>s.id !== id);
-    saveLocalSemanas(semanas);
-    showSuccess('Semana local eliminada');
-    carregarSemanas();
-    if(semanaAtiva && semanaAtiva.id === id){ semanaAtiva=null; document.getElementById('areaPlanificacao').classList.add('hidden'); }
-    return;
-  }
-  // cloud
   try{
-    await db.collection('semanas').doc(id).delete();
-    showSuccess('Semana eliminada (cloud)');
-    carregarSemanas();
-    if(semanaAtiva && semanaAtiva.id === id){ semanaAtiva=null; document.getElementById('areaPlanificacao').classList.add('hidden'); }
+    await deleteDoc(doc(db,'turmas',turmaAtiva.id,'semanas',semId));
+    if(semanaAtiva && semanaAtiva.id === semId){ semanaAtiva = null; areaPlan.style.display = 'none'; }
+    loadSemanas();
   }catch(err){
-    console.error('Erro eliminar semana cloud',err);
-    if(isPermissionError(err)){ localFallback=true; setModeIndicator(); showError('Sem permissões para eliminar semana no Firestore.'); }
-    else showError('Erro ao eliminar semana: ' + err.message);
+    console.error('Erro deleteSemana',err);
+    alert('Erro ao eliminar semana: ' + (err.message||err));
   }
 }
 
-/* salvarPlanificacao() - atualiza cloud se possível, caso contrário guarda local */
-async function salvarPlanificacao(){
-  if(!turmaAtiva || !semanaAtiva){ showError('Selecione turma e semana antes de guardar'); return; }
-  const planObj = {};
-  document.querySelectorAll('.content-cell textarea').forEach(t=>{
-    const cell = t.closest('.content-cell');
-    const key = `${cell.getAttribute('data-day')}-${cell.getAttribute('data-time')}`;
-    planObj[key] = t.value;
-  });
-
-  if(semanaAtiva.isLocal || localFallback){
-    // save local
-    const semanas = getLocalSemanas();
-    const idx = semanas.findIndex(s=>s.id === semanaAtiva.id);
-    if(idx<0){
-      // create local week entry
-      semanas.unshift({
-        id: semanaAtiva.id || ('local-'+Date.now()),
-        turmaId: turmaAtiva.id,
-        descricao: semanaAtiva.descricao || '',
-        dataInicio: (new Date()).toISOString(),
-        dataFim: (new Date()).toISOString(),
-        planificacao: planObj,
-        criadoEm: (new Date()).toISOString()
-      });
-    } else {
-      semanas[idx].planificacao = planObj;
-      semanas[idx].atualizadoEm = (new Date()).toISOString();
-    }
-    saveLocalSemanas(semanas);
-    showSuccess('Planificação guardada localmente');
-    return;
-  }
-
-  // try cloud update
+/* btnGerarGrelha -> cria documento da semana (com planificacao inicial vazia) */
+btnGerarGrelha.addEventListener('click', async ()=>{
+  if(!turmaAtiva){ alert('Selecione uma turma'); return; }
+  const inicio = semInicio.value;
+  const fim = semFim.value;
+  if(!inicio || !fim){ alert('Escolha data início e fim'); return; }
+  if(new Date(fim) < new Date(inicio)){ alert('Data fim deve ser depois da de início'); return; }
+  // gerar lista de datas entre inicio e fim (inclusive)
+  const dates = datesBetween(inicio, fim);
+  const rangeText = formatDisplayRange(inicio, fim);
+  // criar objeto planificacao com arrays por data (um slot por horário)
+  const planificacao = {};
+  dates.forEach(d => planificacao[d] = HORARIOS.map(_=> ''));
   try{
-    await db.collection('semanas').doc(semanaAtiva.id).update({
-      planificacao: planObj,
-      atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+    const docRef = await addDoc(collection(db,'turmas',turmaAtiva.id,'semanas'), {
+      inicio, fim, rangeText, createdAt: new Date().toISOString(), horarios: HORARIOS, planificacao
     });
-    showSuccess('Planificação guardada no Firestore');
+    // abrir logo a semana criada
+    openSemana({ id: docRef.id, inicio, fim, rangeText, horarios: HORARIOS, planificacao });
+    loadSemanas();
   }catch(err){
-    console.error('Erro guardar planificacao cloud',err);
-    if(isPermissionError(err)){
-      localFallback = true; setModeIndicator();
-      showError('Sem permissões para gravar planificação no Firestore — guardando localmente.');
-      // save local
-      const semanas = getLocalSemanas();
-      const idx = semanas.findIndex(s=>s.id === semanaAtiva.id);
-      if(idx>=0){ semanas[idx].planificacao = planObj; semanas[idx].atualizadoEm = (new Date()).toISOString(); }
-      else semanas.unshift({ id: semanaAtiva.id || ('local-'+Date.now()), turmaId: turmaAtiva.id, descricao: semanaAtiva.descricao||'', dataInicio: (new Date()).toISOString(), dataFim: (new Date()).toISOString(), planificacao: planObj, criadoEm:(new Date()).toISOString() });
-      saveLocalSemanas(semanas);
-      showSuccess('Planificação guardada localmente');
-    } else showError('Erro ao guardar planificação: ' + (err.message||err));
+    console.error('Erro criar semana',err);
+    alert('Erro ao criar semana: ' + (err.message||err));
+  }
+});
+
+/* openSemana - carrega planificacao e monta grelha */
+async function openSemana(sem){
+  // sem may be object with planificacao or without (cloud read)
+  try{
+    let data;
+    if(sem.planificacao){
+      data = sem;
+    } else {
+      const docRef = doc(db,'turmas',turmaAtiva.id,'semanas',sem.id);
+      const snap = await getDoc(docRef);
+      if(!snap.exists()){ alert('Semana não encontrada'); return; }
+      data = snap.data();
+    }
+    semanaAtiva = { id: sem.id || sem.id, inicio: data.inicio, fim: data.fim, rangeText: data.rangeText, horarios: data.horarios || HORARIOS };
+    tituloSemana.textContent = `Planificação — ${turmaAtiva.nome}`;
+    subtituloSemana.textContent = data.rangeText || (data.inicio + ' → ' + data.fim);
+    // fill selectDia
+    fillSelectDays(data.inicio, data.fim);
+    // render grid
+    renderGrid(data.inicio, data.fim, data.planificacao || {});
+    areaPlan.style.display = 'block';
+  }catch(err){
+    console.error('Erro openSemana',err);
+    alert('Erro ao abrir semana: ' + (err.message||err));
   }
 }
 
-/* mostrar / esconder dias */
-function mostrarSemanaCompleta(){
-  document.querySelectorAll('.day-header').forEach(h=>{ h.classList.remove('hidden'); h.classList.remove('active-day'); });
-  document.querySelectorAll('.day-cell').forEach(c=>{ c.classList.remove('hidden'); c.classList.remove('active-day'); });
-}
-function mostrarDia(dia){
-  document.querySelectorAll('.day-header').forEach(h=>{ if(h.getAttribute('data-day')===dia){ h.classList.remove('hidden'); h.classList.add('active-day'); } else { h.classList.add('hidden'); h.classList.remove('active-day'); }});
-  document.querySelectorAll('.day-cell').forEach(c=>{ if(c.getAttribute('data-day')===dia){ c.classList.remove('hidden'); c.classList.add('active-day'); } else { c.classList.add('hidden'); c.classList.remove('active-day'); }});
+/* renderGrid */
+function renderGrid(inicio, fim, planObj){
+  const dates = datesBetween(inicio,fim);
+  // build table
+  let html = '<table><thead><tr><th class="time-col">Horários</th>';
+  dates.forEach(d=>{
+    const dt = new Date(d);
+    html += `<th>${weekdayName(dt)}<br><small class="muted">${formatDateShort(d)}</small></th>`;
+  });
+  html += '</tr></thead><tbody>';
+  HORARIOS.forEach((slot, slotIndex)=>{
+    html += `<tr><td class="time-col">${slot}</td>`;
+    dates.forEach(d=>{
+      const key = d;
+      const value = (planObj && planObj[key] && planObj[key][slotIndex]) ? escapeHtml(planObj[key][slotIndex]) : '';
+      html += `<td data-date="${d}" data-slot="${slotIndex}" class="cell-td"><textarea class="cell" spellcheck="false">${value}</textarea></td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  grelhaWrapper.innerHTML = html;
+  // set semanaAtiva.planificacao current for saving
+  semanaAtiva.planificacao = planObj || {};
+  // attach blur listeners to save on change
+  document.querySelectorAll('.cell-td textarea').forEach(textarea=>{
+    textarea.addEventListener('blur', async (e)=>{
+      const td = e.target.closest('.cell-td');
+      const date = td.getAttribute('data-date');
+      const slot = parseInt(td.getAttribute('data-slot'));
+      const newVal = e.target.value;
+      // update semanaAtiva.planificacao
+      if(!semanaAtiva.planificacao[date]) semanaAtiva.planificacao[date] = HORARIOS.map(_=>'');
+      semanaAtiva.planificacao[date][slot] = newVal;
+      // save to Firestore (update planificacao map)
+      try{
+        await updateDoc(doc(db,'turmas',turmaAtiva.id,'semanas',semanaAtiva.id), { planificacao: semanaAtiva.planificacao });
+      }catch(err){
+        console.error('Erro ao guardar célula',err);
+        alert('Erro ao guardar (ver consola).');
+      }
+    });
+  });
+  // populate selectDia with dates
+  populateSelectDay(dates);
 }
 
-/* quick init: hide messages / set mode */
-setModeIndicator();
-mostrarForm('login');
+/* fillSelectDays */
+function fillSelectDays(inicio,fim){
+  const dates = datesBetween(inicio,fim);
+  populateSelectDay(dates);
+}
 
-/* small helper to escape HTML in strings */
-function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+/* populateSelectDay */
+function populateSelectDay(dates){
+  selectDia.innerHTML = '<option value="">Ver dia específico</option>';
+  dates.forEach(d=>{
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = `${weekdayName(new Date(d))} — ${formatDateShort(d)}`;
+    selectDia.appendChild(opt);
+  });
+}
+
+/* btnVerSemana / selectDia change */
+btnVerSemana.addEventListener('click', ()=> {
+  // show all (remove style)
+  document.querySelectorAll('.cell-td').forEach(td => td.style.display = '');
+  document.querySelectorAll('table thead th').forEach(th => th.style.display = '');
+});
+selectDia.addEventListener('change', (e)=>{
+  const date = e.target.value;
+  if(!date){
+    // show all
+    document.querySelectorAll('.cell-td').forEach(td => td.style.display = '');
+    document.querySelectorAll('table thead th').forEach(th => th.style.display = '');
+    return;
+  }
+  // hide all columns except the time col and the chosen date column
+  const headers = Array.from(document.querySelectorAll('table thead th'));
+  const idx = headers.findIndex(h => h.getAttribute('data-date') === date || h.textContent.includes(formatDateShort(date)));
+  // instead of relying on data-date in th, we match by order: first th is times, subsequent map to datesBetween order
+  const dates = datesBetween(semanaAtiva.inicio, semanaAtiva.fim);
+  document.querySelectorAll('table thead th').forEach((th,i)=>{
+    if(i===0) { th.style.display = ''; return; }
+    const colDate = dates[i-1];
+    if(colDate === date) th.style.display = ''; else th.style.display = 'none';
+  });
+  // columns: hide or show td based on data-date attribute
+  document.querySelectorAll('.cell-td').forEach(td=>{
+    td.style.display = td.getAttribute('data-date') === date ? '' : 'none';
+  });
+});
+
+/* helper datesBetween inclusive */
+function datesBetween(start, end){
+  const arr = [];
+  let cur = new Date(start);
+  const last = new Date(end);
+  while(cur <= last){
+    arr.push(cur.toISOString().split('T')[0]);
+    cur.setDate(cur.getDate()+1);
+  }
+  return arr;
+}
+function weekdayName(d){
+  return d.toLocaleDateString('pt-PT',{weekday:'short'}).replace('.', '');
+}
+function formatDateShort(isoYmd){
+  const d = new Date(isoYmd);
+  return d.toLocaleDateString('pt-PT');
+}
+function formatDisplayRange(a,b){
+  return `${formatDateShort(a)} → ${formatDateShort(b)}`;
+}
+function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+
+/* openSemana by id (reload doc) */
+async function openSemanaById(semId){
+  try{
+    const snap = await getDoc(doc(db,'turmas',turmaAtiva.id,'semanas',semId));
+    if(!snap.exists()){ alert('Semana não encontrada'); return; }
+    const data = snap.data();
+    openSemana({ id: semId, ...data });
+  }catch(err){ console.error(err); alert('Erro abrir semana'); }
+}
+
+/* openSemana wrapper used by list items */
+async function openSemana(semObj){
+  // if semObj.planificacao available, directly render; otherwise fetch exists above (openSemana handles both)
+  if(!semObj.planificacao){
+    await openSemanaById(semObj.id);
+    return;
+  }
+  // else semObj has planificacao already
+  semanaAtiva = { id: semObj.id, inicio: semObj.inicio, fim: semObj.fim, rangeText: semObj.rangeText, horarios: semObj.horarios || HORARIOS, planificacao: semObj.planificacao };
+  tituloSemana.textContent = `Planificação — ${turmaAtiva.nome}`;
+  subtituloSemana.textContent = semObj.rangeText || (semObj.inicio + ' → ' + semObj.fim);
+  fillSelectDays(semObj.inicio, semObj.fim);
+  renderGrid(semObj.inicio, semObj.fim, semObj.planificacao || {});
+  areaPlan.style.display = 'block';
+}
+
+/* loadSemanas shortcut button */
+btnCarregarSemanas.addEventListener('click', loadSemanas);
+
+/* ====== Inicial ====== */
+function init(){
+  // nothing else for now
+}
+init();
+
 </script>
 </body>
 </html>
