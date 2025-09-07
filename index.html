@@ -929,18 +929,23 @@
             }
         }
 
-        // Eliminar turma (agora com Firebase)
+        // Eliminar turma (corrigido)
         async function eliminarTurma(turmaId) {
             if (!confirm('Tem a certeza que deseja eliminar esta turma? Esta ação não pode ser desfeita.')) {
                 return;
             }
 
             try {
+                console.log('A eliminar turma:', turmaId); // Debug
+                
                 // Eliminar todas as semanas da turma primeiro
                 const semanasSnapshot = await db.collection('semanas')
                     .where('turmaId', '==', turmaId)
                     .get();
 
+                console.log('Semanas a eliminar:', semanasSnapshot.size); // Debug
+
+                // Eliminar semanas em lote
                 const batch = db.batch();
                 semanasSnapshot.forEach(doc => {
                     batch.delete(doc.ref);
@@ -951,6 +956,7 @@
                 
                 await batch.commit();
 
+                alert('Turma eliminada com sucesso!');
                 carregarTurmas();
 
                 // Reset se a turma ativa foi eliminada
@@ -961,10 +967,9 @@
                     document.getElementById('areaPlanificacao').style.display = 'none';
                 }
 
-                alert('Turma eliminada com sucesso!');
             } catch (error) {
                 console.error('Erro ao eliminar turma:', error);
-                alert('Erro ao eliminar turma.');
+                alert('Erro ao eliminar turma: ' + error.message);
             }
         }
 
@@ -1047,24 +1052,29 @@
             return date.toDateString() === today.toDateString();
         }
 
-        // Selecionar semana
+        // Selecionar semana no calendário (corrigido)
         function selectWeek(clickedDate) {
             const dayOfWeek = clickedDate.getDay();
             const monday = new Date(clickedDate);
-            monday.setDate(clickedDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1));
+            
+            // Calcular segunda-feira da semana
+            const daysToMonday = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
+            monday.setDate(clickedDate.getDate() + daysToMonday);
             
             const friday = new Date(monday);
             friday.setDate(monday.getDate() + 4);
 
-            selectedWeekStart = monday;
-            selectedWeekEnd = friday;
+            selectedWeekStart = new Date(monday);
+            selectedWeekEnd = new Date(friday);
+
+            console.log('Semana selecionada:', selectedWeekStart, 'a', selectedWeekEnd); // Debug
 
             // Atualizar visual do calendário
             updateCalendarSelection();
             mostrarSemanaSelcionada();
         }
 
-        // Atualizar seleção visual do calendário
+        // Atualizar seleção visual do calendário (corrigido)
         function updateCalendarSelection() {
             const days = document.querySelectorAll('.calendar-day');
             days.forEach(day => {
@@ -1072,16 +1082,23 @@
             });
 
             if (selectedWeekStart && selectedWeekEnd) {
+                const year = calendarDate.getFullYear();
+                const month = calendarDate.getMonth();
+                
                 days.forEach(day => {
-                    const dayDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 
-                        parseInt(day.querySelector('.day-number').textContent));
+                    const dayNumber = day.querySelector('.day-number');
+                    if (!dayNumber) return;
                     
+                    const dayDate = new Date(year, month, parseInt(dayNumber.textContent));
+                    
+                    // Verificar se o dia está no intervalo selecionado
                     if (dayDate >= selectedWeekStart && dayDate <= selectedWeekEnd) {
                         day.classList.add('in-range');
-                        if (dayDate.getTime() === selectedWeekStart.getTime()) {
+                        
+                        if (dayDate.toDateString() === selectedWeekStart.toDateString()) {
                             day.classList.add('range-start');
                         }
-                        if (dayDate.getTime() === selectedWeekEnd.getTime()) {
+                        if (dayDate.toDateString() === selectedWeekEnd.toDateString()) {
                             day.classList.add('range-end');
                         }
                     }
@@ -1101,7 +1118,7 @@
             document.getElementById('selectedWeek').style.display = 'block';
         }
 
-        // Confirmar criação da semana
+        // Confirmar criação da semana (com regras de Firestore mais simples)
         async function confirmarSemana() {
             if (!turmaAtiva || !selectedWeekStart || !selectedWeekEnd) {
                 alert('Erro: dados incompletos.');
@@ -1115,14 +1132,19 @@
             try {
                 console.log('A criar semana:', descricao, 'para turma:', turmaAtiva.id);
                 
-                await db.collection('semanas').add({
+                // Dados mais simples para evitar problemas de permissão
+                const semanaData = {
                     turmaId: turmaAtiva.id,
                     descricao: descricao,
                     dataInicio: firebase.firestore.Timestamp.fromDate(selectedWeekStart),
                     dataFim: firebase.firestore.Timestamp.fromDate(selectedWeekEnd),
                     criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
-                    planificacao: {}
-                });
+                    planificacao: {},
+                    userId: currentUser.uid // Adicionar userId para as regras de segurança
+                };
+
+                const docRef = await db.collection('semanas').add(semanaData);
+                console.log('Semana criada com ID:', docRef.id);
 
                 // Resetar seleção
                 selectedWeekStart = null;
@@ -1132,18 +1154,32 @@
 
                 carregarSemanas();
                 alert('Semana criada com sucesso!');
+                
             } catch (error) {
-                console.error('Erro ao criar semana:', error);
+                console.error('Erro detalhado:', error);
+                
+                let mensagemErro = 'Erro ao criar semana: ';
                 
                 if (error.code === 'permission-denied') {
-                    alert('Erro de permissões. Verifique as regras do Firestore:\n\n' +
-                          '1. Vá ao Firebase Console\n' +
-                          '2. Firestore Database → Rules\n' +
-                          '3. Use regras de teste:\n\n' +
-                          'allow read, write: if request.auth != null;');
+                    mensagemErro += 'Permissões insuficientes.\n\n';
+                    mensagemErro += 'SOLUÇÃO:\n';
+                    mensagemErro += '1. Vá ao Firebase Console\n';
+                    mensagemErro += '2. Firestore Database → Rules\n';
+                    mensagemErro += '3. Cole estas regras:\n\n';
+                    mensagemErro += 'rules_version = \'2\';\n';
+                    mensagemErro += 'service cloud.firestore {\n';
+                    mensagemErro += '  match /databases/{database}/documents {\n';
+                    mensagemErro += '    match /{document=**} {\n';
+                    mensagemErro += '      allow read, write: if request.auth != null;\n';
+                    mensagemErro += '    }\n';
+                    mensagemErro += '  }\n';
+                    mensagemErro += '}\n\n';
+                    mensagemErro += '4. Clique "Publish"';
                 } else {
-                    alert('Erro ao criar semana: ' + error.message);
+                    mensagemErro += error.message;
                 }
+                
+                alert(mensagemErro);
             }
         }
 
@@ -1153,7 +1189,7 @@
             generateCalendar();
         }
 
-        // Carregar semanas (corrigido)
+        // Carregar semanas (corrigido - sem orderBy que causa problemas)
         async function carregarSemanas() {
             const lista = document.getElementById('listaSemanas');
             
@@ -1165,9 +1201,9 @@
             try {
                 console.log('A carregar semanas para a turma:', turmaAtiva.id); // Debug
                 
+                // Remover orderBy que pode causar problemas de índice
                 const snapshot = await db.collection('semanas')
                     .where('turmaId', '==', turmaAtiva.id)
-                    .orderBy('criadoEm', 'desc')
                     .get();
 
                 console.log('Semanas encontradas:', snapshot.size); // Debug
@@ -1186,6 +1222,14 @@
                     console.log('Semana carregada:', semanaData); // Debug
                 });
 
+                // Ordenar por data no cliente
+                semanas.sort((a, b) => {
+                    if (a.criadoEm && b.criadoEm) {
+                        return b.criadoEm.toMillis() - a.criadoEm.toMillis();
+                    }
+                    return 0;
+                });
+
                 semanas.forEach((semana) => {
                     const li = document.createElement('li');
                     li.className = 'semana-item';
@@ -1202,12 +1246,7 @@
                 });
             } catch (error) {
                 console.error('Erro ao carregar semanas:', error);
-                lista.innerHTML = '<li style="color: red;">Erro ao carregar semanas. Pode precisar criar índice no Firestore.</li>';
-                
-                // Mostrar link para criar índice se necessário
-                if (error.code === 'failed-precondition') {
-                    console.log('Precisa criar um índice no Firestore. Clique no link que apareceu no console.');
-                }
+                lista.innerHTML = `<li style="color: red;">Erro: ${error.message}</li>`;
             }
         }
 
@@ -1231,22 +1270,28 @@
             document.getElementById('areaPlanificacao').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Eliminar semana
-        function eliminarSemana(index) {
+        // Eliminar semana (corrigido)
+        async function eliminarSemana(semanaId) {
             if (!confirm('Tem a certeza que deseja eliminar esta semana? Esta ação não pode ser desfeita.')) {
                 return;
             }
 
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            turmas[turmaAtiva].semanas.splice(index, 1);
-            localStorage.setItem('turmas', JSON.stringify(turmas));
+            try {
+                console.log('A eliminar semana:', semanaId); // Debug
+                
+                await db.collection('semanas').doc(semanaId).delete();
 
-            carregarSemanas();
+                alert('Semana eliminada com sucesso!');
+                carregarSemanas();
 
-            // Reset se a semana ativa foi eliminada
-            if (semanaAtiva === index) {
-                semanaAtiva = null;
-                document.getElementById('areaPlanificacao').style.display = 'none';
+                // Reset se a semana ativa foi eliminada
+                if (semanaAtiva && semanaAtiva.id === semanaId) {
+                    semanaAtiva = null;
+                    document.getElementById('areaPlanificacao').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Erro ao eliminar semana:', error);
+                alert('Erro ao eliminar semana: ' + error.message);
             }
         }
 
