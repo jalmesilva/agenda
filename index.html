@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planificação Semanal - 1º Ciclo</title>
-    
-    <!-- Firebase SDKs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -171,9 +166,10 @@
             background: #667eea !important;
             color: white !important;
             font-weight: 600;
-            width: 120px;
-            font-size: 12px;
-            padding: 15px 10px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            width: 80px;
+            font-size: 10px;
         }
 
         .content-cell {
@@ -264,106 +260,7 @@
             background: #e8f4f8 !important;
         }
 
-        .auth-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .auth-card {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .auth-card h2 {
-            color: #667eea;
-            margin-bottom: 30px;
-            font-size: 2em;
-        }
-
-        .auth-tabs {
-            display: flex;
-            margin-bottom: 30px;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #f0f0f0;
-        }
-
-        .auth-tab {
-            flex: 1;
-            padding: 12px;
-            background: #f0f0f0;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
-        }
-
-        .auth-tab.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .auth-form {
-            display: none;
-        }
-
-        .auth-form.active {
-            display: block;
-        }
-
-        .error-message {
-            color: #ff4444;
-            margin: 10px 0;
-            padding: 10px;
-            background: #ffe6e6;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .success-message {
-            color: #00aa00;
-            margin: 10px 0;
-            padding: 10px;
-            background: #e6ffe6;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .user-info {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logout-btn {
-            background: rgba(255,255,255,0.2) !important;
-            border: 1px solid rgba(255,255,255,0.3) !important;
-            color: white !important;
-            padding: 8px 16px !important;
-            font-size: 12px !important;
-            width: auto !important;
-        }
-
-        .main-content {
-            display: none;
-        }
-
-        .main-content.active {
-            display: block;
-        }
+        @media (max-width: 768px) {
             .container {
                 padding: 10px;
             }
@@ -388,59 +285,11 @@
     </style>
 </head>
 <body>
-    <!-- Tela de Autenticação -->
-    <div id="authContainer" class="auth-container">
-        <div class="auth-card">
-            <h2>🎓 Planificação Escolar</h2>
-            
-            <div class="auth-tabs">
-                <button class="auth-tab active" onclick="mostrarForm('login')">Entrar</button>
-                <button class="auth-tab" onclick="mostrarForm('register')">Registar</button>
-            </div>
-
-            <div id="errorMessage" class="error-message" style="display: none;"></div>
-            <div id="successMessage" class="success-message" style="display: none;"></div>
-
-            <!-- Formulário de Login -->
-            <form id="loginForm" class="auth-form active">
-                <div class="form-group">
-                    <input type="email" id="loginEmail" placeholder="Email" required>
-                </div>
-                <div class="form-group">
-                    <input type="password" id="loginPassword" placeholder="Palavra-passe" required>
-                </div>
-                <button type="submit">Entrar</button>
-            </form>
-
-            <!-- Formulário de Registo -->
-            <form id="registerForm" class="auth-form">
-                <div class="form-group">
-                    <input type="text" id="registerName" placeholder="Nome completo" required>
-                </div>
-                <div class="form-group">
-                    <input type="email" id="registerEmail" placeholder="Email" required>
-                </div>
-                <div class="form-group">
-                    <input type="password" id="registerPassword" placeholder="Palavra-passe (min. 6 caracteres)" required>
-                </div>
-                <button type="submit">Registar</button>
-            </form>
+    <div class="container">
+        <div class="header">
+            <h1>Planificação Semanal</h1>
+            <p>Sistema de Planificação para Professores do 1º Ciclo</p>
         </div>
-    </div>
-
-    <!-- Conteúdo Principal -->
-    <div id="mainContent" class="main-content">
-        <div class="container">
-            <div class="header">
-                <div class="user-info">
-                    <div>
-                        <h1>Planificação Semanal</h1>
-                        <p>Bem-vindo, <span id="userName"></span>!</p>
-                    </div>
-                    <button onclick="logout()" class="logout-btn">🚪 Sair</button>
-                </div>
-                <p>Sistema de Planificação para Professores do 1º Ciclo</p>
-            </div>
 
         <div class="controls">
             <!-- Criar Turma -->
@@ -590,149 +439,16 @@
                     </table>
                 </div>
             </div>
-            </div>
         </div>
     </div>
 
     <script>
-        // Configuração do Firebase - SUBSTITUA PELOS SEUS DADOS
-        const firebaseConfig = {
-            apiKey: "sua-api-key-aqui",
-            authDomain: "seu-projeto.firebaseapp.com",
-            projectId: "seu-projeto-id",
-            storageBucket: "seu-projeto.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "sua-app-id-aqui"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        let currentUser = null;
         let turmaAtiva = null;
         let semanaAtiva = null;
 
-        // Verificar estado de autenticação
-        auth.onAuthStateChanged(function(user) {
-            if (user) {
-                currentUser = user;
-                document.getElementById('userName').textContent = user.displayName || user.email;
-                mostrarConteudoPrincipal();
-                carregarTurmas();
-            } else {
-                currentUser = null;
-                mostrarTelaAuth();
-            }
-        });
-
-        function mostrarTelaAuth() {
-            document.getElementById('authContainer').style.display = 'flex';
-            document.getElementById('mainContent').classList.remove('active');
-        }
-
-        function mostrarConteudoPrincipal() {
-            document.getElementById('authContainer').style.display = 'none';
-            document.getElementById('mainContent').classList.add('active');
-        }
-
-        function mostrarForm(tipo) {
-            // Atualizar tabs
-            document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-
-            // Mostrar formulário
-            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
-            document.getElementById(tipo + 'Form').classList.add('active');
-
-            // Limpar mensagens
-            document.getElementById('errorMessage').style.display = 'none';
-            document.getElementById('successMessage').style.display = 'none';
-        }
-
-        function mostrarErro(mensagem) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = mensagem;
-            errorDiv.style.display = 'block';
-            document.getElementById('successMessage').style.display = 'none';
-        }
-
-        function mostrarSucesso(mensagem) {
-            const successDiv = document.getElementById('successMessage');
-            successDiv.textContent = mensagem;
-            successDiv.style.display = 'block';
-            document.getElementById('errorMessage').style.display = 'none';
-        }
-
-        // Login
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-
-            auth.signInWithEmailAndPassword(email, password)
-                .then(function(userCredential) {
-                    mostrarSucesso('Login realizado com sucesso!');
-                })
-                .catch(function(error) {
-                    let mensagem = 'Erro no login. Verifique os seus dados.';
-                    if (error.code === 'auth/user-not-found') {
-                        mensagem = 'Utilizador não encontrado.';
-                    } else if (error.code === 'auth/wrong-password') {
-                        mensagem = 'Palavra-passe incorreta.';
-                    } else if (error.code === 'auth/invalid-email') {
-                        mensagem = 'Email inválido.';
-                    }
-                    mostrarErro(mensagem);
-                });
-        });
-
-        // Registo
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const name = document.getElementById('registerName').value;
-            const email = document.getElementById('registerEmail').value;
-            const password = document.getElementById('registerPassword').value;
-
-            if (password.length < 6) {
-                mostrarErro('A palavra-passe deve ter pelo menos 6 caracteres.');
-                return;
-            }
-
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(function(userCredential) {
-                    // Atualizar perfil com nome
-                    return userCredential.user.updateProfile({
-                        displayName: name
-                    });
-                })
-                .then(function() {
-                    mostrarSucesso('Conta criada com sucesso! A iniciar sessão...');
-                })
-                .catch(function(error) {
-                    let mensagem = 'Erro ao criar conta.';
-                    if (error.code === 'auth/email-already-in-use') {
-                        mensagem = 'Este email já está a ser usado.';
-                    } else if (error.code === 'auth/invalid-email') {
-                        mensagem = 'Email inválido.';
-                    } else if (error.code === 'auth/weak-password') {
-                        mensagem = 'Palavra-passe muito fraca.';
-                    }
-                    mostrarErro(mensagem);
-                });
-        });
-
-        // Logout
-        function logout() {
-            if (confirm('Tem a certeza que deseja sair?')) {
-                auth.signOut();
-            }
-        }
-
         // Carregar dados ao iniciar
         window.onload = function() {
-            // O Firebase irá gerir automaticamente o estado de autenticação
+            carregarTurmas();
         };
 
         // Criar turma
@@ -796,58 +512,35 @@
             });
         }
 
-        // Selecionar turma (agora com Firebase)
-        async function selecionarTurma(turmaId) {
-            try {
-                const doc = await db.collection('turmas').doc(turmaId).get();
-                if (doc.exists) {
-                    turmaAtiva = { id: doc.id, ...doc.data() };
-                    document.getElementById('cardSemana').style.display = 'block';
-                    carregarSemanas();
-                    alert(`Turma "${turmaAtiva.nome}" selecionada!`);
-                }
-            } catch (error) {
-                console.error('Erro ao selecionar turma:', error);
-                alert('Erro ao selecionar turma.');
-            }
+        // Selecionar turma
+        function selecionarTurma(index) {
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            turmaAtiva = index;
+            
+            document.getElementById('cardSemana').style.display = 'block';
+            carregarSemanas();
+            
+            alert(`Turma "${turmas[index].nome}" selecionada!`);
         }
 
-        // Eliminar turma (agora com Firebase)
-        async function eliminarTurma(turmaId) {
+        // Eliminar turma
+        function eliminarTurma(index) {
             if (!confirm('Tem a certeza que deseja eliminar esta turma? Esta ação não pode ser desfeita.')) {
                 return;
             }
 
-            try {
-                // Eliminar todas as semanas da turma primeiro
-                const semanasSnapshot = await db.collection('semanas')
-                    .where('turmaId', '==', turmaId)
-                    .get();
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            turmas.splice(index, 1);
+            localStorage.setItem('turmas', JSON.stringify(turmas));
 
-                const batch = db.batch();
-                semanasSnapshot.forEach(doc => {
-                    batch.delete(doc.ref);
-                });
-
-                // Eliminar a turma
-                batch.delete(db.collection('turmas').doc(turmaId));
-                
-                await batch.commit();
-
-                carregarTurmas();
-
-                // Reset se a turma ativa foi eliminada
-                if (turmaAtiva && turmaAtiva.id === turmaId) {
-                    turmaAtiva = null;
-                    semanaAtiva = null;
-                    document.getElementById('cardSemana').style.display = 'none';
-                    document.getElementById('areaPlanificacao').style.display = 'none';
-                }
-
-                alert('Turma eliminada com sucesso!');
-            } catch (error) {
-                console.error('Erro ao eliminar turma:', error);
-                alert('Erro ao eliminar turma.');
+            carregarTurmas();
+            
+            // Reset se a turma ativa foi eliminada
+            if (turmaAtiva === index) {
+                turmaAtiva = null;
+                semanaAtiva = null;
+                document.getElementById('cardSemana').style.display = 'none';
+                document.getElementById('areaPlanificacao').style.display = 'none';
             }
         }
 
