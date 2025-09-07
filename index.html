@@ -866,19 +866,27 @@
             });
         }
 
-        // Selecionar turma (agora com Firebase)
-        async function selecionarTurma(turmaId) {
+        // Selecionar turma (corrigido)
+        function selecionarTurma(turmaId, nome, ano, professor) {
+            console.log('Selecionando turma:', turmaId, nome, ano, professor); // Debug
+            
             try {
-                const doc = await db.collection('turmas').doc(turmaId).get();
-                if (doc.exists) {
-                    turmaAtiva = { id: doc.id, ...doc.data() };
-                    document.getElementById('cardSemana').style.display = 'block';
-                    carregarSemanas();
-                    alert(`Turma "${turmaAtiva.nome}" selecionada!`);
-                }
+                turmaAtiva = {
+                    id: turmaId,
+                    nome: nome,
+                    ano: ano,
+                    professor: professor
+                };
+                
+                console.log('Turma ativa definida:', turmaAtiva); // Debug
+                
+                document.getElementById('cardSemana').style.display = 'block';
+                carregarSemanas();
+                
+                alert(`Turma "${nome}" selecionada!`);
             } catch (error) {
                 console.error('Erro ao selecionar turma:', error);
-                alert('Erro ao selecionar turma.');
+                alert('Erro ao selecionar turma: ' + error.message);
             }
         }
 
@@ -921,9 +929,9 @@
             }
         }
 
-        // Criar semana
-        document.getElementById('btnCriarSemana').addEventListener('click', function() {
-            if (turmaAtiva === null) {
+        // Criar semana (corrigido)
+        document.getElementById('btnCriarSemana').addEventListener('click', async function() {
+            if (!turmaAtiva) {
                 alert('Selecione uma turma primeiro.');
                 return;
             }
@@ -934,57 +942,81 @@
                 return;
             }
 
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-            const novaSemana = {
-                id: Date.now(),
-                descricao,
-                planificacao: {}
-            };
+            try {
+                console.log('A criar semana:', descricao, 'para turma:', turmaAtiva.id); // Debug
+                
+                await db.collection('semanas').add({
+                    turmaId: turmaAtiva.id,
+                    descricao: descricao,
+                    criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+                    planificacao: {}
+                });
 
-            if (!turmas[turmaAtiva].semanas) {
-                turmas[turmaAtiva].semanas = [];
+                document.getElementById('descricaoSemana').value = '';
+                carregarSemanas();
+                alert('Semana criada com sucesso!');
+            } catch (error) {
+                console.error('Erro ao criar semana:', error);
+                alert('Erro ao criar semana: ' + error.message);
             }
-
-            turmas[turmaAtiva].semanas.push(novaSemana);
-            localStorage.setItem('turmas', JSON.stringify(turmas));
-
-            document.getElementById('descricaoSemana').value = '';
-            carregarSemanas();
-            alert('Semana criada com sucesso!');
         });
 
-        // Carregar semanas
-        function carregarSemanas() {
+        // Carregar semanas (corrigido)
+        async function carregarSemanas() {
             const lista = document.getElementById('listaSemanas');
-            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
-
-            if (turmaAtiva === null || !turmas[turmaAtiva].semanas) {
-                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma semana criada</li>';
+            
+            if (!turmaAtiva) {
+                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Selecione uma turma primeiro</li>';
                 return;
             }
 
-            const semanas = turmas[turmaAtiva].semanas;
-            lista.innerHTML = '';
+            try {
+                console.log('A carregar semanas para a turma:', turmaAtiva.id); // Debug
+                
+                const snapshot = await db.collection('semanas')
+                    .where('turmaId', '==', turmaAtiva.id)
+                    .orderBy('criadoEm', 'desc')
+                    .get();
 
-            if (semanas.length === 0) {
-                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma semana criada</li>';
-                return;
+                console.log('Semanas encontradas:', snapshot.size); // Debug
+
+                lista.innerHTML = '';
+
+                if (snapshot.empty) {
+                    lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma semana criada</li>';
+                    return;
+                }
+
+                const semanas = [];
+                snapshot.forEach((doc) => {
+                    const semanaData = { id: doc.id, ...doc.data() };
+                    semanas.push(semanaData);
+                    console.log('Semana carregada:', semanaData); // Debug
+                });
+
+                semanas.forEach((semana) => {
+                    const li = document.createElement('li');
+                    li.className = 'semana-item';
+                    li.innerHTML = `
+                        <div>
+                            <strong>${semana.descricao}</strong>
+                        </div>
+                        <div class="semana-actions">
+                            <button onclick="abrirPlanificacao('${semana.id}', '${semana.descricao}')" class="btn-secondary">Abrir</button>
+                            <button onclick="eliminarSemana('${semana.id}')" class="btn-danger">Eliminar</button>
+                        </div>
+                    `;
+                    lista.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar semanas:', error);
+                lista.innerHTML = '<li style="color: red;">Erro ao carregar semanas. Pode precisar criar índice no Firestore.</li>';
+                
+                // Mostrar link para criar índice se necessário
+                if (error.code === 'failed-precondition') {
+                    console.log('Precisa criar um índice no Firestore. Clique no link que apareceu no console.');
+                }
             }
-
-            semanas.forEach((semana, index) => {
-                const li = document.createElement('li');
-                li.className = 'semana-item';
-                li.innerHTML = `
-                    <div>
-                        <strong>${semana.descricao}</strong>
-                    </div>
-                    <div class="semana-actions">
-                        <button onclick="abrirPlanificacao(${index})" class="btn-secondary">Abrir</button>
-                        <button onclick="eliminarSemana(${index})" class="btn-danger">Eliminar</button>
-                    </div>
-                `;
-                lista.appendChild(li);
-            });
         }
 
         // Abrir planificação
