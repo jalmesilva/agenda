@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planificação Semanal - 1º Ciclo</title>
     
-    <!-- Firebase SDKs - Versão mais estável -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
+    <!-- Firebase SDKs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -365,8 +364,6 @@
         .main-content.active {
             display: block;
         }
-
-        @media (max-width: 768px) {
             .container {
                 padding: 10px;
             }
@@ -386,11 +383,6 @@
 
             .content-cell textarea {
                 font-size: 9px;
-            }
-
-            .auth-card {
-                margin: 20px;
-                padding: 30px 20px;
             }
         }
     </style>
@@ -450,168 +442,167 @@
                 <p>Sistema de Planificação para Professores do 1º Ciclo</p>
             </div>
 
-            <div class="controls">
-                <!-- Criar Turma -->
-                <div class="card">
-                    <h3>📚 Criar Nova Turma</h3>
-                    <div class="form-group">
-                        <label>Nome da Turma:</label>
-                        <input type="text" id="nomeTurma" placeholder="Ex: 4º ano">
-                    </div>
-                    <div class="form-group">
-                        <label>Ano Letivo:</label>
-                        <input type="text" id="anoLetivo" placeholder="Ex: 2024/2025">
-                    </div>
-                    <div class="form-group">
-                        <label>Professor(a):</label>
-                        <input type="text" id="nomeProfessor" placeholder="Nome do professor">
-                    </div>
-                    <button id="btnCriarTurma">Criar Turma</button>
+        <div class="controls">
+            <!-- Criar Turma -->
+            <div class="card">
+                <h3>📚 Criar Nova Turma</h3>
+                <div class="form-group">
+                    <label>Nome da Turma:</label>
+                    <input type="text" id="nomeTurma" placeholder="Ex: 4º ano">
                 </div>
-
-                <!-- Lista de Turmas -->
-                <div class="card">
-                    <h3>📋 Turmas Criadas</h3>
-                    <ul id="listaTurmas" class="turma-list"></ul>
+                <div class="form-group">
+                    <label>Ano Letivo:</label>
+                    <input type="text" id="anoLetivo" placeholder="Ex: 2024/2025">
                 </div>
-
-                <!-- Definir Semana -->
-                <div class="card" id="cardSemana" style="display: none;">
-                    <h3>📅 Definir Semana</h3>
-                    <div class="form-group">
-                        <label>Descrição da Semana:</label>
-                        <input type="text" id="descricaoSemana" placeholder="Ex: 8 a 12 de setembro">
-                    </div>
-                    <button id="btnCriarSemana">Criar Semana</button>
-                    <ul id="listaSemanas" class="semana-list"></ul>
+                <div class="form-group">
+                    <label>Professor(a):</label>
+                    <input type="text" id="nomeProfessor" placeholder="Nome do professor">
                 </div>
+                <button id="btnCriarTurma">Criar Turma</button>
             </div>
 
-            <!-- Área da Planificação -->
-            <div id="areaPlanificacao" style="display: none;">
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <div>
-                            <h3 id="tituloAtual">Planificação Ativa</h3>
-                            <p id="infoAtual" style="color: #666; margin-top: 5px;"></p>
-                        </div>
-                        <div class="view-controls">
-                            <button onclick="mostrarSemanaCompleta()">📅 Semana Completa</button>
-                            <button onclick="mostrarDia('segunda')">2ª feira</button>
-                            <button onclick="mostrarDia('terca')">3ª feira</button>
-                            <button onclick="mostrarDia('quarta')">4ª feira</button>
-                            <button onclick="mostrarDia('quinta')">5ª feira</button>
-                            <button onclick="mostrarDia('sexta')">6ª feira</button>
-                            <button onclick="salvarPlanificacao()" class="btn-secondary">💾 Salvar</button>
-                        </div>
-                    </div>
+            <!-- Lista de Turmas -->
+            <div class="card">
+                <h3>📋 Turmas Criadas</h3>
+                <ul id="listaTurmas" class="turma-list"></ul>
+            </div>
 
-                    <div class="schedule-container">
-                        <div class="schedule-header">
-                            <h4 id="cabecalhoPlanificacao">Planificação Semanal</h4>
-                        </div>
-                        <table class="schedule-table">
-                            <thead>
-                                <tr>
-                                    <th>Horas</th>
-                                    <th class="day-header" data-day="segunda">2ª feira</th>
-                                    <th class="day-header" data-day="terca">3ª feira</th>
-                                    <th class="day-header" data-day="quarta">4ª feira</th>
-                                    <th class="day-header" data-day="quinta">5ª feira</th>
-                                    <th class="day-header" data-day="sexta">6ª feira</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="time-cell">9h00–10h30</td>
-                                    <td class="content-cell day-cell" data-day="segunda" data-time="0900-1030">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="terca" data-time="0900-1030">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="quarta" data-time="0900-1030">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="quinta" data-time="0900-1030">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="sexta" data-time="0900-1030">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="time-cell">11h00–12h30</td>
-                                    <td class="content-cell day-cell" data-day="segunda" data-time="1100-1230">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="terca" data-time="1100-1230">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="quarta" data-time="1100-1230">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="quinta" data-time="1100-1230">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="sexta" data-time="1100-1230">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="time-cell">13h45–15h30</td>
-                                    <td class="content-cell day-cell" data-day="segunda" data-time="1345-1530">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="terca" data-time="1345-1530">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="quarta" data-time="1345-1530">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="quinta" data-time="1345-1530">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="sexta" data-time="1345-1530">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="time-cell">16h00–17h15</td>
-                                    <td class="content-cell day-cell" data-day="segunda" data-time="1600-1715">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="terca" data-time="1600-1715">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="quarta" data-time="1600-1715">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="quinta" data-time="1600-1715">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                    <td class="content-cell day-cell" data-day="sexta" data-time="1600-1715">
-                                        <textarea placeholder="Planificação..."></textarea>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <!-- Definir Semana -->
+            <div class="card" id="cardSemana" style="display: none;">
+                <h3>📅 Definir Semana</h3>
+                <div class="form-group">
+                    <label>Descrição da Semana:</label>
+                    <input type="text" id="descricaoSemana" placeholder="Ex: 8 a 12 de setembro">
+                </div>
+                <button id="btnCriarSemana">Criar Semana</button>
+                <ul id="listaSemanas" class="semana-list"></ul>
+            </div>
+        </div>
+
+        <!-- Área da Planificação -->
+        <div id="areaPlanificacao" style="display: none;">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 id="tituloAtual">Planificação Ativa</h3>
+                        <p id="infoAtual" style="color: #666; margin-top: 5px;"></p>
+                    </div>
+                    <div class="view-controls">
+                        <button onclick="mostrarSemanaCompleta()">📅 Semana Completa</button>
+                        <button onclick="mostrarDia('segunda')">2ª feira</button>
+                        <button onclick="mostrarDia('terca')">3ª feira</button>
+                        <button onclick="mostrarDia('quarta')">4ª feira</button>
+                        <button onclick="mostrarDia('quinta')">5ª feira</button>
+                        <button onclick="mostrarDia('sexta')">6ª feira</button>
+                        <button onclick="salvarPlanificacao()" class="btn-secondary">💾 Salvar</button>
                     </div>
                 </div>
+
+                <div class="schedule-container">
+                    <div class="schedule-header">
+                        <h4 id="cabecalhoPlanificacao">Planificação Semanal</h4>
+                    </div>
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>Horas</th>
+                                <th class="day-header" data-day="segunda">2ª feira</th>
+                                <th class="day-header" data-day="terca">3ª feira</th>
+                                <th class="day-header" data-day="quarta">4ª feira</th>
+                                <th class="day-header" data-day="quinta">5ª feira</th>
+                                <th class="day-header" data-day="sexta">6ª feira</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="time-cell">9h00–10h30</td>
+                                <td class="content-cell day-cell" data-day="segunda" data-time="0900-1030">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="terca" data-time="0900-1030">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quarta" data-time="0900-1030">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quinta" data-time="0900-1030">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="sexta" data-time="0900-1030">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="time-cell">11h00–12h30</td>
+                                <td class="content-cell day-cell" data-day="segunda" data-time="1100-1230">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="terca" data-time="1100-1230">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quarta" data-time="1100-1230">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quinta" data-time="1100-1230">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="sexta" data-time="1100-1230">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="time-cell">13h45–15h30</td>
+                                <td class="content-cell day-cell" data-day="segunda" data-time="1345-1530">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="terca" data-time="1345-1530">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quarta" data-time="1345-1530">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quinta" data-time="1345-1530">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="sexta" data-time="1345-1530">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="time-cell">16h00–17h15</td>
+                                <td class="content-cell day-cell" data-day="segunda" data-time="1600-1715">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="terca" data-time="1600-1715">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quarta" data-time="1600-1715">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quinta" data-time="1600-1715">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="sexta" data-time="1600-1715">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Configuração do Firebase
+        // Configuração do Firebase - SUBSTITUA PELOS SEUS DADOS
         const firebaseConfig = {
-            apiKey: "AIzaSyAC9EguGeZd50W1jADEx73aJKGacFeGk9o",
-            authDomain: "bddespesas.firebaseapp.com",
-            projectId: "bddespesas",
-            storageBucket: "bddespesas.firebasestorage.app",
-            messagingSenderId: "521648200265",
-            appId: "1:521648200265:web:82fc2c97f02e185478fd98",
-            measurementId: "G-P7NX1T9RVE"
+            apiKey: "sua-api-key-aqui",
+            authDomain: "seu-projeto.firebaseapp.com",
+            projectId: "seu-projeto-id",
+            storageBucket: "seu-projeto.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "sua-app-id-aqui"
         };
 
         // Inicializar Firebase
@@ -625,7 +616,6 @@
 
         // Verificar estado de autenticação
         auth.onAuthStateChanged(function(user) {
-            console.log('Estado de autenticação mudou:', user);
             if (user) {
                 currentUser = user;
                 document.getElementById('userName').textContent = user.displayName || user.email;
@@ -648,12 +638,15 @@
         }
 
         function mostrarForm(tipo) {
+            // Atualizar tabs
             document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
 
+            // Mostrar formulário
             document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
             document.getElementById(tipo + 'Form').classList.add('active');
 
+            // Limpar mensagens
             document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('successMessage').style.display = 'none';
         }
@@ -675,119 +668,58 @@
         // Login
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-
-            console.log('Tentativa de login com:', email);
-
-            if (!email || !password) {
-                mostrarErro('Por favor, preencha todos os campos.');
-                return;
-            }
-
-            const submitBtn = e.target.querySelector('button');
-            const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'A entrar...';
-            submitBtn.disabled = true;
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
 
             auth.signInWithEmailAndPassword(email, password)
                 .then(function(userCredential) {
-                    console.log('Login bem-sucedido:', userCredential.user);
                     mostrarSucesso('Login realizado com sucesso!');
                 })
                 .catch(function(error) {
-                    console.error('Erro no login:', error);
                     let mensagem = 'Erro no login. Verifique os seus dados.';
-                    
-                    switch(error.code) {
-                        case 'auth/user-not-found':
-                            mensagem = 'Utilizador não encontrado.';
-                            break;
-                        case 'auth/wrong-password':
-                            mensagem = 'Palavra-passe incorreta.';
-                            break;
-                        case 'auth/invalid-email':
-                            mensagem = 'Email inválido.';
-                            break;
-                        case 'auth/user-disabled':
-                            mensagem = 'Esta conta foi desativada.';
-                            break;
-                        case 'auth/too-many-requests':
-                            mensagem = 'Muitas tentativas. Tente novamente mais tarde.';
-                            break;
-                        default:
-                            mensagem = `Erro: ${error.message}`;
+                    if (error.code === 'auth/user-not-found') {
+                        mensagem = 'Utilizador não encontrado.';
+                    } else if (error.code === 'auth/wrong-password') {
+                        mensagem = 'Palavra-passe incorreta.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        mensagem = 'Email inválido.';
                     }
                     mostrarErro(mensagem);
-                })
-                .finally(function() {
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
                 });
         });
 
         // Registo
         document.getElementById('registerForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const name = document.getElementById('registerName').value.trim();
-            const email = document.getElementById('registerEmail').value.trim();
-            const password = document.getElementById('registerPassword').value.trim();
-
-            console.log('Tentativa de registo com:', email);
-
-            if (!name || !email || !password) {
-                mostrarErro('Por favor, preencha todos os campos.');
-                return;
-            }
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
 
             if (password.length < 6) {
                 mostrarErro('A palavra-passe deve ter pelo menos 6 caracteres.');
                 return;
             }
 
-            const submitBtn = e.target.querySelector('button');
-            const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'A registar...';
-            submitBtn.disabled = true;
-
             auth.createUserWithEmailAndPassword(email, password)
                 .then(function(userCredential) {
-                    console.log('Registo bem-sucedido:', userCredential.user);
+                    // Atualizar perfil com nome
                     return userCredential.user.updateProfile({
                         displayName: name
                     });
                 })
                 .then(function() {
                     mostrarSucesso('Conta criada com sucesso! A iniciar sessão...');
-                    document.getElementById('registerName').value = '';
-                    document.getElementById('registerEmail').value = '';
-                    document.getElementById('registerPassword').value = '';
                 })
                 .catch(function(error) {
-                    console.error('Erro no registo:', error);
                     let mensagem = 'Erro ao criar conta.';
-                    
-                    switch(error.code) {
-                        case 'auth/email-already-in-use':
-                            mensagem = 'Este email já está a ser usado.';
-                            break;
-                        case 'auth/invalid-email':
-                            mensagem = 'Email inválido.';
-                            break;
-                        case 'auth/weak-password':
-                            mensagem = 'Palavra-passe muito fraca.';
-                            break;
-                        case 'auth/operation-not-allowed':
-                            mensagem = 'Registo não permitido. Contacte o administrador.';
-                            break;
-                        default:
-                            mensagem = `Erro: ${error.message}`;
+                    if (error.code === 'auth/email-already-in-use') {
+                        mensagem = 'Este email já está a ser usado.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        mensagem = 'Email inválido.';
+                    } else if (error.code === 'auth/weak-password') {
+                        mensagem = 'Palavra-passe muito fraca.';
                     }
                     mostrarErro(mensagem);
-                })
-                .finally(function() {
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
                 });
         });
 
@@ -798,8 +730,13 @@
             }
         }
 
+        // Carregar dados ao iniciar
+        window.onload = function() {
+            // O Firebase irá gerir automaticamente o estado de autenticação
+        };
+
         // Criar turma
-        document.getElementById('btnCriarTurma').addEventListener('click', async function() {
+        document.getElementById('btnCriarTurma').addEventListener('click', function() {
             const nome = document.getElementById('nomeTurma').value.trim();
             const ano = document.getElementById('anoLetivo').value.trim();
             const professor = document.getElementById('nomeProfessor').value.trim();
@@ -809,21 +746,319 @@
                 return;
             }
 
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            const novaTurma = {
+                id: Date.now(),
+                nome,
+                ano,
+                professor,
+                semanas: []
+            };
+
+            turmas.push(novaTurma);
+            localStorage.setItem('turmas', JSON.stringify(turmas));
+
+            // Limpar campos
+            document.getElementById('nomeTurma').value = '';
+            document.getElementById('anoLetivo').value = '';
+            document.getElementById('nomeProfessor').value = '';
+
+            carregarTurmas();
+            alert('Turma criada com sucesso!');
+        });
+
+        // Carregar lista de turmas
+        function carregarTurmas() {
+            const lista = document.getElementById('listaTurmas');
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+
+            lista.innerHTML = '';
+
+            if (turmas.length === 0) {
+                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma turma criada</li>';
+                return;
+            }
+
+            turmas.forEach((turma, index) => {
+                const li = document.createElement('li');
+                li.className = 'turma-item';
+                li.innerHTML = `
+                    <div class="turma-info">
+                        <strong>${turma.nome}</strong><br>
+                        <small>${turma.ano} • ${turma.professor}</small>
+                    </div>
+                    <div class="turma-actions">
+                        <button onclick="selecionarTurma(${index})" class="btn-secondary">Selecionar</button>
+                        <button onclick="eliminarTurma(${index})" class="btn-danger">Eliminar</button>
+                    </div>
+                `;
+                lista.appendChild(li);
+            });
+        }
+
+        // Selecionar turma (agora com Firebase)
+        async function selecionarTurma(turmaId) {
             try {
-                await db.collection('turmas').add({
-                    userId: currentUser.uid,
-                    nome,
-                    ano,
-                    professor,
-                    criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+                const doc = await db.collection('turmas').doc(turmaId).get();
+                if (doc.exists) {
+                    turmaAtiva = { id: doc.id, ...doc.data() };
+                    document.getElementById('cardSemana').style.display = 'block';
+                    carregarSemanas();
+                    alert(`Turma "${turmaAtiva.nome}" selecionada!`);
+                }
+            } catch (error) {
+                console.error('Erro ao selecionar turma:', error);
+                alert('Erro ao selecionar turma.');
+            }
+        }
+
+        // Eliminar turma (agora com Firebase)
+        async function eliminarTurma(turmaId) {
+            if (!confirm('Tem a certeza que deseja eliminar esta turma? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            try {
+                // Eliminar todas as semanas da turma primeiro
+                const semanasSnapshot = await db.collection('semanas')
+                    .where('turmaId', '==', turmaId)
+                    .get();
+
+                const batch = db.batch();
+                semanasSnapshot.forEach(doc => {
+                    batch.delete(doc.ref);
                 });
 
-                document.getElementById('nomeTurma').value = '';
-                document.getElementById('anoLetivo').value = '';
-                document.getElementById('nomeProfessor').value = '';
+                // Eliminar a turma
+                batch.delete(db.collection('turmas').doc(turmaId));
+                
+                await batch.commit();
 
                 carregarTurmas();
-                alert('Turma criada com sucesso!');
+
+                // Reset se a turma ativa foi eliminada
+                if (turmaAtiva && turmaAtiva.id === turmaId) {
+                    turmaAtiva = null;
+                    semanaAtiva = null;
+                    document.getElementById('cardSemana').style.display = 'none';
+                    document.getElementById('areaPlanificacao').style.display = 'none';
+                }
+
+                alert('Turma eliminada com sucesso!');
             } catch (error) {
-                console.error('Erro ao criar turma:', error);
-                alert('Erro ao criar turma. Tente novamente.');
+                console.error('Erro ao eliminar turma:', error);
+                alert('Erro ao eliminar turma.');
+            }
+        }
+
+        // Criar semana
+        document.getElementById('btnCriarSemana').addEventListener('click', function() {
+            if (turmaAtiva === null) {
+                alert('Selecione uma turma primeiro.');
+                return;
+            }
+
+            const descricao = document.getElementById('descricaoSemana').value.trim();
+            if (!descricao) {
+                alert('Digite a descrição da semana.');
+                return;
+            }
+
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            const novaSemana = {
+                id: Date.now(),
+                descricao,
+                planificacao: {}
+            };
+
+            if (!turmas[turmaAtiva].semanas) {
+                turmas[turmaAtiva].semanas = [];
+            }
+
+            turmas[turmaAtiva].semanas.push(novaSemana);
+            localStorage.setItem('turmas', JSON.stringify(turmas));
+
+            document.getElementById('descricaoSemana').value = '';
+            carregarSemanas();
+            alert('Semana criada com sucesso!');
+        });
+
+        // Carregar semanas
+        function carregarSemanas() {
+            const lista = document.getElementById('listaSemanas');
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+
+            if (turmaAtiva === null || !turmas[turmaAtiva].semanas) {
+                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma semana criada</li>';
+                return;
+            }
+
+            const semanas = turmas[turmaAtiva].semanas;
+            lista.innerHTML = '';
+
+            if (semanas.length === 0) {
+                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma semana criada</li>';
+                return;
+            }
+
+            semanas.forEach((semana, index) => {
+                const li = document.createElement('li');
+                li.className = 'semana-item';
+                li.innerHTML = `
+                    <div>
+                        <strong>${semana.descricao}</strong>
+                    </div>
+                    <div class="semana-actions">
+                        <button onclick="abrirPlanificacao(${index})" class="btn-secondary">Abrir</button>
+                        <button onclick="eliminarSemana(${index})" class="btn-danger">Eliminar</button>
+                    </div>
+                `;
+                lista.appendChild(li);
+            });
+        }
+
+        // Abrir planificação
+        function abrirPlanificacao(indexSemana) {
+            if (turmaAtiva === null) return;
+
+            semanaAtiva = indexSemana;
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            const turma = turmas[turmaAtiva];
+            const semana = turma.semanas[indexSemana];
+
+            document.getElementById('tituloAtual').textContent = `Planificação: ${semana.descricao}`;
+            document.getElementById('infoAtual').textContent = `${turma.nome} • ${turma.ano} • ${turma.professor}`;
+            document.getElementById('cabecalhoPlanificacao').textContent = `${turma.nome} | ${turma.ano} | ${turma.professor} | SEMANA: ${semana.descricao}`;
+
+            // Carregar dados salvos
+            carregarDadosPlanificacao();
+
+            document.getElementById('areaPlanificacao').style.display = 'block';
+            mostrarSemanaCompleta();
+
+            // Scroll para a planificação
+            document.getElementById('areaPlanificacao').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Eliminar semana
+        function eliminarSemana(index) {
+            if (!confirm('Tem a certeza que deseja eliminar esta semana? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            turmas[turmaAtiva].semanas.splice(index, 1);
+            localStorage.setItem('turmas', JSON.stringify(turmas));
+
+            carregarSemanas();
+
+            // Reset se a semana ativa foi eliminada
+            if (semanaAtiva === index) {
+                semanaAtiva = null;
+                document.getElementById('areaPlanificacao').style.display = 'none';
+            }
+        }
+
+        // Carregar dados da planificação
+        function carregarDadosPlanificacao() {
+            if (turmaAtiva === null || semanaAtiva === null) return;
+
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            const planificacao = turmas[turmaAtiva].semanas[semanaAtiva].planificacao;
+
+            // Carregar dados em cada textarea
+            const textareas = document.querySelectorAll('.content-cell textarea');
+            textareas.forEach(textarea => {
+                const cell = textarea.closest('.content-cell');
+                const day = cell.getAttribute('data-day');
+                const time = cell.getAttribute('data-time');
+                const key = `${day}-${time}`;
+                
+                if (planificacao[key]) {
+                    textarea.value = planificacao[key];
+                }
+            });
+        }
+
+        // Salvar planificação
+        function salvarPlanificacao() {
+            if (turmaAtiva === null || semanaAtiva === null) {
+                alert('Selecione uma turma e semana primeiro.');
+                return;
+            }
+
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            const planificacao = {};
+
+            // Recolher dados de cada textarea
+            const textareas = document.querySelectorAll('.content-cell textarea');
+            textareas.forEach(textarea => {
+                const cell = textarea.closest('.content-cell');
+                const day = cell.getAttribute('data-day');
+                const time = cell.getAttribute('data-time');
+                const key = `${day}-${time}`;
+                
+                planificacao[key] = textarea.value;
+            });
+
+            turmas[turmaAtiva].semanas[semanaAtiva].planificacao = planificacao;
+            localStorage.setItem('turmas', JSON.stringify(turmas));
+
+            alert('Planificação guardada com sucesso!');
+        }
+
+        // Mostrar semana completa
+        function mostrarSemanaCompleta() {
+            const headers = document.querySelectorAll('.day-header');
+            const cells = document.querySelectorAll('.day-cell');
+
+            headers.forEach(header => {
+                header.classList.remove('hidden');
+                header.classList.remove('active-day');
+            });
+
+            cells.forEach(cell => {
+                cell.classList.remove('hidden');
+                cell.classList.remove('active-day');
+            });
+        }
+
+        // Mostrar apenas um dia
+        function mostrarDia(dia) {
+            const headers = document.querySelectorAll('.day-header');
+            const cells = document.querySelectorAll('.day-cell');
+
+            headers.forEach(header => {
+                if (header.getAttribute('data-day') === dia) {
+                    header.classList.remove('hidden');
+                    header.classList.add('active-day');
+                } else {
+                    header.classList.add('hidden');
+                    header.classList.remove('active-day');
+                }
+            });
+
+            cells.forEach(cell => {
+                if (cell.getAttribute('data-day') === dia) {
+                    cell.classList.remove('hidden');
+                    cell.classList.add('active-day');
+                } else {
+                    cell.classList.add('hidden');
+                    cell.classList.remove('active-day');
+                }
+            });
+        }
+
+        // Auto-save ao digitar (opcional)
+        document.addEventListener('input', function(e) {
+            if (e.target.tagName === 'TEXTAREA' && e.target.closest('.content-cell')) {
+                // Auto-save após 2 segundos de inatividade
+                clearTimeout(e.target.autoSaveTimer);
+                e.target.autoSaveTimer = setTimeout(() => {
+                    salvarPlanificacao();
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
