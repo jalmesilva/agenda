@@ -839,55 +839,24 @@
             }
         }
 
-        // Função de eliminação mais segura
-        async function eliminarTurmaSegura(turmaId) {
-            if (!turmaId) {
-                alert('ID da turma inválido.');
+        // Função simples de eliminação sem complicações
+        async function eliminarTurmaFinal(turmaId) {
+            if (!confirm('Tem a certeza que deseja eliminar esta turma?')) {
                 return;
             }
-
-            if (!confirm('Tem a certeza que deseja eliminar esta turma? Esta ação não pode ser desfeita.')) {
-                return;
-            }
-
-            // Mostrar loading
-            const button = event.target;
-            const originalText = button.innerHTML;
-            button.innerHTML = '⏳';
-            button.disabled = true;
 
             try {
-                console.log('Eliminando turma com ID:', turmaId);
+                console.log('A eliminar turma:', turmaId);
                 
-                // Verificar se a turma existe primeiro
-                const turmaDoc = await db.collection('turmas').doc(turmaId).get();
-                if (!turmaDoc.exists) {
-                    throw new Error('Turma não encontrada.');
-                }
-
-                // Eliminar a turma
+                // Eliminar turma diretamente
                 await db.collection('turmas').doc(turmaId).delete();
-                console.log('Turma eliminada com sucesso');
-
-                // Tentar limpar semanas relacionadas (sem falhar se houver problema)
-                try {
-                    const semanasQuery = await db.collection('semanas')
-                        .where('turmaId', '==', turmaId)
-                        .get();
-                    
-                    console.log(`Encontradas ${semanasQuery.size} semanas para limpar`);
-                    
-                    const deletePromises = semanasQuery.docs.map(doc => 
-                        db.collection('semanas').doc(doc.id).delete()
-                    );
-                    
-                    await Promise.all(deletePromises);
-                    console.log('Semanas relacionadas eliminadas');
-                } catch (cleanupError) {
-                    console.warn('Erro ao limpar semanas (não crítico):', cleanupError);
-                }
-
-                // Reset da interface se necessário
+                
+                console.log('Turma eliminada, a recarregar lista...');
+                
+                // Recarregar turmas
+                carregarTurmas();
+                
+                // Reset se necessário
                 if (turmaAtiva && turmaAtiva.id === turmaId) {
                     turmaAtiva = null;
                     semanaAtiva = null;
@@ -895,30 +864,11 @@
                     document.getElementById('areaPlanificacao').style.display = 'none';
                 }
 
-                // Recarregar lista
-                await carregarTurmas();
-                alert('Turma eliminada com sucesso!');
+                alert('Turma eliminada!');
 
             } catch (error) {
-                console.error('Erro ao eliminar turma:', error);
-                
-                let mensagem = 'Erro ao eliminar turma:\n\n';
-                
-                if (error.code === 'permission-denied') {
-                    mensagem += 'Sem permissões para eliminar.\n';
-                    mensagem += 'Verifique as regras do Firestore.';
-                } else if (error.code === 'not-found') {
-                    mensagem += 'Turma não encontrada.\n';
-                    mensagem += 'Pode já ter sido eliminada.';
-                } else {
-                    mensagem += error.message;
-                }
-                
-                alert(mensagem);
-                
-                // Restaurar botão mesmo com erro
-                button.innerHTML = originalText;
-                button.disabled = false;
+                console.error('Erro:', error);
+                alert('Erro ao eliminar: ' + error.message);
             }
         }
 
@@ -1502,16 +1452,20 @@
             });
         }
 
-        // Auto-save ao digitar (atualizado)
+        // Auto-save ao digitar
         document.addEventListener('input', function(e) {
             if (e.target.tagName === 'TEXTAREA' && e.target.closest('.content-cell')) {
-                // Auto-save após 3 segundos de inatividade
                 clearTimeout(e.target.autoSaveTimer);
                 e.target.autoSaveTimer = setTimeout(() => {
                     salvarPlanificacao();
                 }, 3000);
             }
         });
+
+        // Carregar dados ao iniciar
+        window.onload = function() {
+            // O Firebase irá gerir automaticamente o estado de autenticação
+        };
     </script>
 </body>
 </html>
