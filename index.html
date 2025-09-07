@@ -1,523 +1,1369 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Planificação — Professores 1.º Ciclo</title>
-<style>
-  :root{--blue:#2563eb;--danger:#ef4444}
-  body{font-family:Arial,Helvetica,sans-serif;margin:18px;background:#f6f8fb;color:#111}
-  .wrap{max-width:1100px;margin:0 auto}
-  .card{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 6px 20px rgba(15,23,42,0.06)}
-  h1,h2{margin:0 0 8px 0}
-  input,select,textarea,button{padding:8px;border-radius:8px;border:1px solid #d1d5db}
-  button{background:var(--blue);color:#fff;border:0;cursor:pointer}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .muted{color:#6b7280;font-size:13px}
-  .turma-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#f8fafc;margin-bottom:8px}
-  .turma-actions button{margin-left:8px;padding:6px 10px}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  table th,table td{border:1px solid #e6e6e6;padding:6px;vertical-align:top}
-  .time-col{width:160px;background:#eef2ff;font-weight:700;text-align:center}
-  textarea.cell{width:100%;height:70px;border:0;resize:vertical;padding:6px;font-family:inherit}
-  .small {font-size:13px}
-  .danger {background:var(--danger);color:#fff;border:none}
-  .controls {display:flex;gap:8px;flex-wrap:wrap}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificação Semanal - 1º Ciclo</title>
+    
+    <!-- Firebase SDKs - Versão mais estável -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%) !important;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%) !important;
+        }
+
+        .view-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .view-controls button {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .schedule-container {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .schedule-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            border: 1px solid #ddd;
+            text-align: center;
+            vertical-align: top;
+            position: relative;
+        }
+
+        .schedule-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            padding: 15px 8px;
+            color: #555;
+        }
+
+        .time-cell {
+            background: #667eea !important;
+            color: white !important;
+            font-weight: 600;
+            width: 120px;
+            font-size: 12px;
+            padding: 15px 10px;
+        }
+
+        .content-cell {
+            height: 120px;
+            width: 200px;
+            padding: 5px;
+        }
+
+        .content-cell textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            resize: none;
+            font-size: 10px;
+            line-height: 1.2;
+            padding: 5px;
+            background: transparent;
+        }
+
+        .content-cell textarea:focus {
+            outline: 2px solid #667eea;
+            background: #f0f7ff;
+        }
+
+        .turma-list {
+            list-style: none;
+        }
+
+        .turma-item {
+            background: #f8f9fa;
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .turma-info {
+            flex: 1;
+        }
+
+        .turma-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .turma-actions button {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .semana-list {
+            list-style: none;
+        }
+
+        .semana-item {
+            background: #f8f9fa;
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #36d1dc;
+        }
+
+        .semana-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .semana-actions button {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .active-day {
+            background: #e8f4f8 !important;
+        }
+
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .auth-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .auth-card h2 {
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            background: #f0f0f0;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .auth-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .error-message {
+            color: #ff4444;
+            margin: 10px 0;
+            padding: 10px;
+            background: #ffe6e6;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .success-message {
+            color: #00aa00;
+            margin: 10px 0;
+            padding: 10px;
+            background: #e6ffe6;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .user-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2) !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+            color: white !important;
+            padding: 8px 16px !important;
+            font-size: 12px !important;
+            width: auto !important;
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .schedule-table {
+                font-size: 9px;
+            }
+
+            .content-cell {
+                height: 80px;
+                width: 150px;
+            }
+
+            .content-cell textarea {
+                font-size: 9px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="wrap">
+    <!-- Tela de Autenticação -->
+    <div id="authContainer" class="auth-container">
+        <div class="auth-card">
+            <h2>🎓 Planificação Escolar</h2>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="mostrarForm('login')">Entrar</button>
+                <button class="auth-tab" onclick="mostrarForm('register')">Registar</button>
+            </div>
 
-  <div id="auth" class="card">
-    <h1>Planificação — Login</h1>
-    <div class="row">
-      <div>
-        <input id="email" type="email" placeholder="Email" />
-      </div>
-      <div>
-        <input id="password" type="password" placeholder="Password" />
-      </div>
-    </div>
-    <div style="margin-top:8px">
-      <button id="btnLogin">Entrar</button>
-      <button id="btnLogout" style="display:none;margin-left:8px;background:#6b7280">Sair</button>
-      <span id="userInfo" class="muted" style="margin-left:12px"></span>
-    </div>
-    <p id="authMsg" class="muted small" style="margin-top:8px">Usa contas criadas no Firebase Auth. Regras Firestore devem permitir o acesso aos teus emails.</p>
-  </div>
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            <div id="successMessage" class="success-message" style="display: none;"></div>
 
-  <div id="app" class="card" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <h2>Gestão de Turmas</h2>
-        <div class="muted small">Coleções usadas: <strong>turmas</strong> → subcoleção <strong>semanas</strong></div>
-      </div>
-      <div class="muted small">Utilizador: <span id="who"></span></div>
-    </div>
+            <!-- Formulário de Login -->
+            <form id="loginForm" class="auth-form active">
+                <div class="form-group">
+                    <input type="email" id="loginEmail" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="loginPassword" placeholder="Palavra-passe" required>
+                </div>
+                <button type="submit">Entrar</button>
+            </form>
 
-    <!-- criar turma -->
-    <div style="margin-top:12px" class="card">
-      <h3>Criar Turma</h3>
-      <div class="row">
-        <input id="turmaNome" placeholder="Nome da turma (ex.: 4.º A)" />
-        <input id="turmaAno" placeholder="Ano letivo (ex.: 2024/2025)" />
-      </div>
-      <div style="margin-top:8px" class="row">
-        <input id="turmaProf" placeholder="Professor responsável (email ou nome)" />
-        <div>
-          <button id="btnCriarTurma">Criar Turma</button>
+            <!-- Formulário de Registo -->
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <input type="text" id="registerName" placeholder="Nome completo" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="registerEmail" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="registerPassword" placeholder="Palavra-passe (min. 6 caracteres)" required>
+                </div>
+                <button type="submit">Registar</button>
+            </form>
         </div>
-      </div>
-      <p id="turmaMsg" class="muted small" style="margin-top:6px"></p>
     </div>
 
-    <!-- lista turmas -->
-    <div class="card">
-      <h3>Turmas</h3>
-      <div id="listaTurmas"></div>
-    </div>
+    <!-- Conteúdo Principal -->
+    <div id="mainContent" class="main-content">
+        <div class="container">
+            <div class="header">
+                <div class="user-info">
+                    <div>
+                        <h1>Planificação Semanal</h1>
+                        <p>Bem-vindo, <span id="userName"></span>!</p>
+                    </div>
+                    <button onclick="logout()" class="logout-btn">🚪 Sair</button>
+                </div>
+                <p>Sistema de Planificação para Professores do 1º Ciclo</p>
+            </div>
 
-    <!-- semanas: selecionar -->
-    <div id="panelSemanas" class="card" style="display:none">
-      <h3>Semanas — Turma: <span id="turmaNomeAtiva"></span></h3>
-
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-        <label class="small">Início: <input id="semInicio" type="date" /></label>
-        <label class="small">Fim: <input id="semFim" type="date" /></label>
-        <button id="btnGerarGrelha">Gerar Grelha</button>
-        <button id="btnCarregarSemanas" style="background:#6b7280">Carregar semanas</button>
-      </div>
-
-      <div id="listaSemanas"></div>
-    </div>
-
-    <!-- area planificacao -->
-    <div id="areaPlan" class="card" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <h3 id="tituloSemana">Planificação</h3>
-          <div class="muted small" id="subtituloSemana"></div>
-        </div>
         <div class="controls">
-          <button id="btnVerSemana">Ver semana</button>
-          <select id="selectDia" style="min-width:160px">
-            <option value="">Ver dia específico</option>
-          </select>
-          <button id="btnEliminarSemana" class="danger">Eliminar semana</button>
-        </div>
-      </div>
+            <!-- Criar Turma -->
+            <div class="card">
+                <h3>📚 Criar Nova Turma</h3>
+                <div class="form-group">
+                    <label>Nome da Turma:</label>
+                    <input type="text" id="nomeTurma" placeholder="Ex: 4º ano">
+                </div>
+                <div class="form-group">
+                    <label>Ano Letivo:</label>
+                    <input type="text" id="anoLetivo" placeholder="Ex: 2024/2025">
+                </div>
+                <div class="form-group">
+                    <label>Professor(a):</label>
+                    <input type="text" id="nomeProfessor" placeholder="Nome do professor">
+                </div>
+                <button id="btnCriarTurma">Criar Turma</button>
+            </div>
 
-      <div id="grelhaWrapper" style="overflow:auto;margin-top:12px"></div>
+            <!-- Lista de Turmas -->
+            <div class="card">
+                <h3>📋 Turmas Criadas</h3>
+                <ul id="listaTurmas" class="turma-list"></ul>
+            </div>
+
+            <!-- Definir Semana com Calendário -->
+            <div class="card" id="cardSemana" style="display: none;">
+                <h3>📅 Definir Semana de Planificação</h3>
+                
+                <!-- Semanas Rápidas -->
+                <div class="quick-weeks">
+                    <button class="quick-week-btn" onclick="criarSemanaRapida('esta')">📅 Esta Semana</button>
+                    <button class="quick-week-btn" onclick="criarSemanaRapida('proxima')">⏭️ Próxima Semana</button>
+                    <button class="quick-week-btn" onclick="criarSemanaRapida('custom')">🗓️ Escolher no Calendário</button>
+                </div>
+
+                <!-- Calendário -->
+                <div id="calendarContainer" class="calendar-container" style="display: none;">
+                    <div class="calendar-header">
+                        <h4 id="calendarTitle">Selecione a Semana</h4>
+                        <div class="calendar-nav">
+                            <button onclick="changeMonth(-1)">‹</button>
+                            <button onclick="changeMonth(1)">›</button>
+                        </div>
+                    </div>
+                    
+                    <div class="calendar-grid">
+                        <div class="calendar-day-header">Dom</div>
+                        <div class="calendar-day-header">Seg</div>
+                        <div class="calendar-day-header">Ter</div>
+                        <div class="calendar-day-header">Qua</div>
+                        <div class="calendar-day-header">Qui</div>
+                        <div class="calendar-day-header">Sex</div>
+                        <div class="calendar-day-header">Sáb</div>
+                        <!-- Dias serão adicionados dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Semana Selecionada -->
+                <div id="selectedWeek" class="selected-range" style="display: none;">
+                    <h4>Semana Selecionada:</h4>
+                    <p id="weekRangeText"></p>
+                    <button onclick="confirmarSemana()" style="margin-top: 10px;">✅ Criar Esta Semana</button>
+                </div>
+
+                <!-- Lista de Semanas Existentes -->
+                <div style="margin-top: 30px;">
+                    <h4>📋 Semanas Criadas</h4>
+                    <ul id="listaSemanas" class="semana-list"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área da Planificação -->
+        <div id="areaPlanificacao" style="display: none;">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 id="tituloAtual">Planificação Ativa</h3>
+                        <p id="infoAtual" style="color: #666; margin-top: 5px;"></p>
+                    </div>
+                    <div class="view-controls">
+                        <button onclick="mostrarSemanaCompleta()">📅 Semana Completa</button>
+                        <button onclick="mostrarDia('segunda')">2ª feira</button>
+                        <button onclick="mostrarDia('terca')">3ª feira</button>
+                        <button onclick="mostrarDia('quarta')">4ª feira</button>
+                        <button onclick="mostrarDia('quinta')">5ª feira</button>
+                        <button onclick="mostrarDia('sexta')">6ª feira</button>
+                        <button onclick="salvarPlanificacao()" class="btn-secondary">💾 Salvar</button>
+                    </div>
+                </div>
+
+                <div class="schedule-container">
+                    <div class="schedule-header">
+                        <h4 id="cabecalhoPlanificacao">Planificação Semanal</h4>
+                    </div>
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>Horas</th>
+                                <th class="day-header" data-day="segunda">2ª feira</th>
+                                <th class="day-header" data-day="terca">3ª feira</th>
+                                <th class="day-header" data-day="quarta">4ª feira</th>
+                                <th class="day-header" data-day="quinta">5ª feira</th>
+                                <th class="day-header" data-day="sexta">6ª feira</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="time-cell">9h00–10h30</td>
+                                <td class="content-cell day-cell" data-day="segunda" data-time="0900-1030">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="terca" data-time="0900-1030">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quarta" data-time="0900-1030">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quinta" data-time="0900-1030">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="sexta" data-time="0900-1030">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="time-cell">11h00–12h30</td>
+                                <td class="content-cell day-cell" data-day="segunda" data-time="1100-1230">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="terca" data-time="1100-1230">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quarta" data-time="1100-1230">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quinta" data-time="1100-1230">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="sexta" data-time="1100-1230">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="time-cell">13h45–15h30</td>
+                                <td class="content-cell day-cell" data-day="segunda" data-time="1345-1530">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="terca" data-time="1345-1530">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quarta" data-time="1345-1530">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quinta" data-time="1345-1530">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="sexta" data-time="1345-1530">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="time-cell">16h00–17h15</td>
+                                <td class="content-cell day-cell" data-day="segunda" data-time="1600-1715">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="terca" data-time="1600-1715">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quarta" data-time="1600-1715">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="quinta" data-time="1600-1715">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                                <td class="content-cell day-cell" data-day="sexta" data-time="1600-1715">
+                                    <textarea placeholder="Planificação..."></textarea>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            </div>
+        </div>
     </div>
 
-  </div>
-</div>
+    <script>
+        // Configuração do Firebase - Suas configurações reais
+        const firebaseConfig = {
+            apiKey: "AIzaSyAC9EguGeZd50W1jADEx73aJKGacFeGk9o",
+            authDomain: "bddespesas.firebaseapp.com",
+            projectId: "bddespesas",
+            storageBucket: "bddespesas.firebasestorage.app",
+            messagingSenderId: "521648200265",
+            appId: "1:521648200265:web:82fc2c97f02e185478fd98",
+            measurementId: "G-P7NX1T9RVE"
+        };
 
-<script type="module">
-/* ====== Firebase modular (imports) ====== */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, doc, setDoc, getDoc, getDocs, query, where, orderBy, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-/* ====== Config - usa a tua config (projeto bddespesas) ====== */
-const firebaseConfig = {
-  apiKey: "AIzaSyAC9EguGeZd50W1jADEx73aJKGacFeGk9o",
-  authDomain: "bddespesas.firebaseapp.com",
-  projectId: "bddespesas",
-  storageBucket: "bddespesas.firebasestorage.app",
-  messagingSenderId: "521648200265",
-  appId: "1:521648200265:web:82fc2c97f02e185478fd98",
-  measurementId: "G-P7NX1T9RVE"
-};
+        let currentUser = null;
+        let turmaAtiva = null;
+        let semanaAtiva = null;
+        let calendarDate = new Date();
+        let selectedWeekStart = null;
+        let selectedWeekEnd = null;
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+        // Verificar estado de autenticação
+        auth.onAuthStateChanged(function(user) {
+            console.log('Estado de autenticação mudou:', user); // Debug
+            if (user) {
+                currentUser = user;
+                document.getElementById('userName').textContent = user.displayName || user.email;
+                mostrarConteudoPrincipal();
+                carregarTurmas();
+            } else {
+                currentUser = null;
+                mostrarTelaAuth();
+            }
+        });
 
-/* ====== Constantes ====== */
-const HORARIOS = ["09:05-10:30","11:00-12:30","13:45-15:30","16:00-17:15"];
+        function mostrarTelaAuth() {
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('mainContent').classList.remove('active');
+        }
 
-/* ====== UI refs ====== */
-const el = id => document.getElementById(id);
-const who = el('who');
-const authMsg = el('authMsg');
-const btnLogin = el('btnLogin');
-const btnLogout = el('btnLogout');
-const btnCriarTurma = el('btnCriarTurma');
-const listaTurmas = el('listaTurmas');
-const turmaNomeAtiva = el('turmaNomeAtiva');
-const panelSemanas = el('panelSemanas');
-const listaSemanas = el('listaSemanas');
-const semInicio = el('semInicio'), semFim = el('semFim'), btnGerarGrelha = el('btnGerarGrelha');
-const areaPlan = el('areaPlan'), tituloSemana = el('tituloSemana'), subtituloSemana = el('subtituloSemana');
-const grelhaWrapper = el('grelhaWrapper'), btnVerSemana = el('btnVerSemana'), selectDia = el('selectDia');
-const btnEliminarSemana = el('btnEliminarSemana'), btnCarregarSemanas = el('btnCarregarSemanas');
-const turmaMsg = el('turmaMsg');
+        function mostrarConteudoPrincipal() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('mainContent').classList.add('active');
+        }
 
-/* ====== Estado ====== */
-let currentUser = null;
-let turmaAtiva = null;   // { id, nome, ano, professor }
-let semanaAtiva = null;  // { id, inicio, fim }
+        function mostrarForm(tipo) {
+            // Atualizar tabs
+            document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
 
-/* ====== Autenticação ====== */
-btnLogin.addEventListener('click', async () => {
-  authMsg.textContent = '';
-  const email = el('email').value.trim();
-  const password = el('password').value;
-  if(!email || !password){ authMsg.textContent = 'Preencha email e password.'; return; }
-  try{
-    await signInWithEmailAndPassword(auth, email, password);
-  }catch(err){
-    console.error(err);
-    authMsg.textContent = err.message || 'Erro no login.';
-  }
-});
-btnLogout.addEventListener('click', async () => {
-  await signOut(auth);
-});
+            // Mostrar formulário
+            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+            document.getElementById(tipo + 'Form').classList.add('active');
 
-/* onAuthStateChanged */
-onAuthStateChanged(auth, user => {
-  currentUser = user;
-  if(user){
-    el('auth').style.display = 'none';
-    el('app').style.display = 'block';
-    who.textContent = user.email;
-    loadTurmas();
-  } else {
-    el('auth').style.display = 'block';
-    el('app').style.display = 'none';
-  }
-});
+            // Limpar mensagens
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
 
-/* ====== Turmas ====== */
-btnCriarTurma.addEventListener('click', async () => {
-  turmaMsg.textContent = '';
-  if(!currentUser) { turmaMsg.textContent = 'Faça login primeiro.'; return; }
-  const nome = el('turmaNome').value.trim();
-  const ano = el('turmaAno').value.trim();
-  const prof = el('turmaProf').value.trim();
-  if(!nome || !ano || !prof){ turmaMsg.textContent = 'Preencha todos os campos.'; return; }
-  try{
-    const docRef = await addDoc(collection(db,'turmas'), {
-      nome, ano, professor: prof, owner: currentUser.uid, createdAt: new Date().toISOString()
-    });
-    el('turmaNome').value=''; el('turmaAno').value=''; el('turmaProf').value='';
-    loadTurmas();
-  }catch(err){
-    console.error('Erro criar turma',err);
-    turmaMsg.textContent = 'Erro ao criar turma: ' + (err.message||err);
-  }
-});
+        function mostrarErro(mensagem) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = mensagem;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
 
-/* loadTurmas - mostra lista e botoes */
-async function loadTurmas(){
-  listaTurmas.innerHTML = 'A carregar...';
-  try{
-    const q = query(collection(db,'turmas'), orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
-    listaTurmas.innerHTML = '';
-    if(snap.empty){ listaTurmas.innerHTML = '<div class="muted">Nenhuma turma.</div>'; return; }
-    snap.forEach(d => {
-      const data = d.data();
-      const id = d.id;
-      const div = document.createElement('div');
-      div.className = 'turma-item';
-      div.innerHTML = `
-        <div>
-          <strong>${escapeHtml(data.nome)}</strong><br>
-          <span class="muted small">${escapeHtml(data.ano)} • ${escapeHtml(data.professor)}</span>
-        </div>
-        <div class="turma-actions">
-          <button data-id="${id}" class="select">Abrir</button>
-          <button data-id="${id}" class="delete" style="background:#ef4444">Eliminar</button>
-        </div>
-      `;
-      div.querySelector('.select').addEventListener('click', ()=> selectTurma({ id, ...data }));
-      div.querySelector('.delete').addEventListener('click', ()=> deleteTurma(id));
-      listaTurmas.appendChild(div);
-    });
-  }catch(err){
-    console.error('Erro loadTurmas',err);
-    listaTurmas.innerHTML = '<div class="muted">Erro ao carregar turmas.</div>';
-  }
-}
+        function mostrarSucesso(mensagem) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = mensagem;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
 
-/* selectTurma */
-function selectTurma(t){
-  turmaAtiva = t;
-  turmaNomeAtiva.textContent = t.nome;
-  panelSemanas.style.display = 'block';
-  listaSemanas.innerHTML = '';
-  areaPlan.style.display = 'none';
-  loadSemanas();
-}
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
 
-/* deleteTurma - apaga subcoleção semanas e depois turma doc */
-async function deleteTurma(id){
-  if(!confirm('Eliminar esta turma e todas as semanas?')) return;
-  try{
-    // apagar semanas (leitura e apagar cada)
-    const semSnap = await getDocs(collection(db,'turmas',id,'semanas'));
-    const deletes = [];
-    semSnap.forEach(sdoc => deletes.push(deleteDoc(doc(db,'turmas',id,'semanas',sdoc.id))));
-    await Promise.all(deletes);
-    // apagar turma
-    await deleteDoc(doc(db,'turmas',id));
-    if(turmaAtiva && turmaAtiva.id === id) { turmaAtiva = null; panelSemanas.style.display = 'none'; areaPlan.style.display = 'none'; }
-    loadTurmas();
-  }catch(err){
-    console.error('Erro deleteTurma',err);
-    alert('Erro ao eliminar turma: ' + (err.message||err));
-  }
-}
+            console.log('Tentativa de login com:', email); // Debug
 
-/* ====== Semanas ====== */
-/* loadSemanas */
-async function loadSemanas(){
-  listaSemanas.innerHTML = 'A carregar semanas...';
-  try{
-    const q = query(collection(db,'turmas',turmaAtiva.id,'semanas'), orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
-    listaSemanas.innerHTML = '';
-    if(snap.empty){ listaSemanas.innerHTML = '<div class="muted">Nenhuma semana criada.</div>'; return; }
-    snap.forEach(d => {
-      const data = d.data();
-      const id = d.id;
-      const div = document.createElement('div');
-      div.className = 'turma-item';
-      div.innerHTML = `<div><strong>${escapeHtml(data.rangeText || data.inicio + ' → ' + data.fim)}</strong><br><span class="muted small">${data.createdAt || ''}</span></div>
-        <div class="turma-actions">
-          <button data-id="${id}" class="open">Abrir</button>
-          <button data-id="${id}" class="delete" style="background:#ef4444">Eliminar</button>
-        </div>`;
-      div.querySelector('.open').addEventListener('click', ()=> openSemana({ id, ...data }));
-      div.querySelector('.delete').addEventListener('click', ()=> deleteSemana(id));
-      listaSemanas.appendChild(div);
-    });
-  }catch(err){
-    console.error('Erro loadSemanas',err);
-    listaSemanas.innerHTML = '<div class="muted">Erro ao carregar semanas.</div>';
-  }
-}
+            if (!email || !password) {
+                mostrarErro('Por favor, preencha todos os campos.');
+                return;
+            }
 
-/* deleteSemana */
-async function deleteSemana(semId){
-  if(!confirm('Eliminar esta semana?')) return;
-  try{
-    await deleteDoc(doc(db,'turmas',turmaAtiva.id,'semanas',semId));
-    if(semanaAtiva && semanaAtiva.id === semId){ semanaAtiva = null; areaPlan.style.display = 'none'; }
-    loadSemanas();
-  }catch(err){
-    console.error('Erro deleteSemana',err);
-    alert('Erro ao eliminar semana: ' + (err.message||err));
-  }
-}
+            // Mostrar loading
+            const submitBtn = e.target.querySelector('button');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'A entrar...';
+            submitBtn.disabled = true;
 
-/* btnGerarGrelha -> cria documento da semana (com planificacao inicial vazia) */
-btnGerarGrelha.addEventListener('click', async ()=>{
-  if(!turmaAtiva){ alert('Selecione uma turma'); return; }
-  const inicio = semInicio.value;
-  const fim = semFim.value;
-  if(!inicio || !fim){ alert('Escolha data início e fim'); return; }
-  if(new Date(fim) < new Date(inicio)){ alert('Data fim deve ser depois da de início'); return; }
-  // gerar lista de datas entre inicio e fim (inclusive)
-  const dates = datesBetween(inicio, fim);
-  const rangeText = formatDisplayRange(inicio, fim);
-  // criar objeto planificacao com arrays por data (um slot por horário)
-  const planificacao = {};
-  dates.forEach(d => planificacao[d] = HORARIOS.map(_=> ''));
-  try{
-    const docRef = await addDoc(collection(db,'turmas',turmaAtiva.id,'semanas'), {
-      inicio, fim, rangeText, createdAt: new Date().toISOString(), horarios: HORARIOS, planificacao
-    });
-    // abrir logo a semana criada
-    openSemana({ id: docRef.id, inicio, fim, rangeText, horarios: HORARIOS, planificacao });
-    loadSemanas();
-  }catch(err){
-    console.error('Erro criar semana',err);
-    alert('Erro ao criar semana: ' + (err.message||err));
-  }
-});
+            auth.signInWithEmailAndPassword(email, password)
+                .then(function(userCredential) {
+                    console.log('Login bem-sucedido:', userCredential.user); // Debug
+                    mostrarSucesso('Login realizado com sucesso!');
+                    // O onAuthStateChanged irá tratar da mudança de tela
+                })
+                .catch(function(error) {
+                    console.error('Erro no login:', error); // Debug
+                    let mensagem = 'Erro no login. Verifique os seus dados.';
+                    
+                    switch(error.code) {
+                        case 'auth/user-not-found':
+                            mensagem = 'Utilizador não encontrado.';
+                            break;
+                        case 'auth/wrong-password':
+                            mensagem = 'Palavra-passe incorreta.';
+                            break;
+                        case 'auth/invalid-email':
+                            mensagem = 'Email inválido.';
+                            break;
+                        case 'auth/user-disabled':
+                            mensagem = 'Esta conta foi desativada.';
+                            break;
+                        case 'auth/too-many-requests':
+                            mensagem = 'Muitas tentativas. Tente novamente mais tarde.';
+                            break;
+                        default:
+                            mensagem = `Erro: ${error.message}`;
+                    }
+                    mostrarErro(mensagem);
+                })
+                .finally(function() {
+                    // Restaurar botão
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                });
+        });
 
-/* openSemana - carrega planificacao e monta grelha */
-async function openSemana(sem){
-  // sem may be object with planificacao or without (cloud read)
-  try{
-    let data;
-    if(sem.planificacao){
-      data = sem;
-    } else {
-      const docRef = doc(db,'turmas',turmaAtiva.id,'semanas',sem.id);
-      const snap = await getDoc(docRef);
-      if(!snap.exists()){ alert('Semana não encontrada'); return; }
-      data = snap.data();
-    }
-    semanaAtiva = { id: sem.id || sem.id, inicio: data.inicio, fim: data.fim, rangeText: data.rangeText, horarios: data.horarios || HORARIOS };
-    tituloSemana.textContent = `Planificação — ${turmaAtiva.nome}`;
-    subtituloSemana.textContent = data.rangeText || (data.inicio + ' → ' + data.fim);
-    // fill selectDia
-    fillSelectDays(data.inicio, data.fim);
-    // render grid
-    renderGrid(data.inicio, data.fim, data.planificacao || {});
-    areaPlan.style.display = 'block';
-  }catch(err){
-    console.error('Erro openSemana',err);
-    alert('Erro ao abrir semana: ' + (err.message||err));
-  }
-}
+        // Registo
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value.trim();
 
-/* renderGrid */
-function renderGrid(inicio, fim, planObj){
-  const dates = datesBetween(inicio,fim);
-  // build table
-  let html = '<table><thead><tr><th class="time-col">Horários</th>';
-  dates.forEach(d=>{
-    const dt = new Date(d);
-    html += `<th>${weekdayName(dt)}<br><small class="muted">${formatDateShort(d)}</small></th>`;
-  });
-  html += '</tr></thead><tbody>';
-  HORARIOS.forEach((slot, slotIndex)=>{
-    html += `<tr><td class="time-col">${slot}</td>`;
-    dates.forEach(d=>{
-      const key = d;
-      const value = (planObj && planObj[key] && planObj[key][slotIndex]) ? escapeHtml(planObj[key][slotIndex]) : '';
-      html += `<td data-date="${d}" data-slot="${slotIndex}" class="cell-td"><textarea class="cell" spellcheck="false">${value}</textarea></td>`;
-    });
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-  grelhaWrapper.innerHTML = html;
-  // set semanaAtiva.planificacao current for saving
-  semanaAtiva.planificacao = planObj || {};
-  // attach blur listeners to save on change
-  document.querySelectorAll('.cell-td textarea').forEach(textarea=>{
-    textarea.addEventListener('blur', async (e)=>{
-      const td = e.target.closest('.cell-td');
-      const date = td.getAttribute('data-date');
-      const slot = parseInt(td.getAttribute('data-slot'));
-      const newVal = e.target.value;
-      // update semanaAtiva.planificacao
-      if(!semanaAtiva.planificacao[date]) semanaAtiva.planificacao[date] = HORARIOS.map(_=>'');
-      semanaAtiva.planificacao[date][slot] = newVal;
-      // save to Firestore (update planificacao map)
-      try{
-        await updateDoc(doc(db,'turmas',turmaAtiva.id,'semanas',semanaAtiva.id), { planificacao: semanaAtiva.planificacao });
-      }catch(err){
-        console.error('Erro ao guardar célula',err);
-        alert('Erro ao guardar (ver consola).');
-      }
-    });
-  });
-  // populate selectDia with dates
-  populateSelectDay(dates);
-}
+            console.log('Tentativa de registo com:', email); // Debug
 
-/* fillSelectDays */
-function fillSelectDays(inicio,fim){
-  const dates = datesBetween(inicio,fim);
-  populateSelectDay(dates);
-}
+            if (!name || !email || !password) {
+                mostrarErro('Por favor, preencha todos os campos.');
+                return;
+            }
 
-/* populateSelectDay */
-function populateSelectDay(dates){
-  selectDia.innerHTML = '<option value="">Ver dia específico</option>';
-  dates.forEach(d=>{
-    const opt = document.createElement('option');
-    opt.value = d;
-    opt.textContent = `${weekdayName(new Date(d))} — ${formatDateShort(d)}`;
-    selectDia.appendChild(opt);
-  });
-}
+            if (password.length < 6) {
+                mostrarErro('A palavra-passe deve ter pelo menos 6 caracteres.');
+                return;
+            }
 
-/* btnVerSemana / selectDia change */
-btnVerSemana.addEventListener('click', ()=> {
-  // show all (remove style)
-  document.querySelectorAll('.cell-td').forEach(td => td.style.display = '');
-  document.querySelectorAll('table thead th').forEach(th => th.style.display = '');
-});
-selectDia.addEventListener('change', (e)=>{
-  const date = e.target.value;
-  if(!date){
-    // show all
-    document.querySelectorAll('.cell-td').forEach(td => td.style.display = '');
-    document.querySelectorAll('table thead th').forEach(th => th.style.display = '');
-    return;
-  }
-  // hide all columns except the time col and the chosen date column
-  const headers = Array.from(document.querySelectorAll('table thead th'));
-  const idx = headers.findIndex(h => h.getAttribute('data-date') === date || h.textContent.includes(formatDateShort(date)));
-  // instead of relying on data-date in th, we match by order: first th is times, subsequent map to datesBetween order
-  const dates = datesBetween(semanaAtiva.inicio, semanaAtiva.fim);
-  document.querySelectorAll('table thead th').forEach((th,i)=>{
-    if(i===0) { th.style.display = ''; return; }
-    const colDate = dates[i-1];
-    if(colDate === date) th.style.display = ''; else th.style.display = 'none';
-  });
-  // columns: hide or show td based on data-date attribute
-  document.querySelectorAll('.cell-td').forEach(td=>{
-    td.style.display = td.getAttribute('data-date') === date ? '' : 'none';
-  });
-});
+            // Mostrar loading
+            const submitBtn = e.target.querySelector('button');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'A registar...';
+            submitBtn.disabled = true;
 
-/* helper datesBetween inclusive */
-function datesBetween(start, end){
-  const arr = [];
-  let cur = new Date(start);
-  const last = new Date(end);
-  while(cur <= last){
-    arr.push(cur.toISOString().split('T')[0]);
-    cur.setDate(cur.getDate()+1);
-  }
-  return arr;
-}
-function weekdayName(d){
-  return d.toLocaleDateString('pt-PT',{weekday:'short'}).replace('.', '');
-}
-function formatDateShort(isoYmd){
-  const d = new Date(isoYmd);
-  return d.toLocaleDateString('pt-PT');
-}
-function formatDisplayRange(a,b){
-  return `${formatDateShort(a)} → ${formatDateShort(b)}`;
-}
-function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(function(userCredential) {
+                    console.log('Registo bem-sucedido:', userCredential.user); // Debug
+                    // Atualizar perfil com nome
+                    return userCredential.user.updateProfile({
+                        displayName: name
+                    });
+                })
+                .then(function() {
+                    mostrarSucesso('Conta criada com sucesso! A iniciar sessão...');
+                    // Limpar formulário
+                    document.getElementById('registerName').value = '';
+                    document.getElementById('registerEmail').value = '';
+                    document.getElementById('registerPassword').value = '';
+                })
+                .catch(function(error) {
+                    console.error('Erro no registo:', error); // Debug
+                    let mensagem = 'Erro ao criar conta.';
+                    
+                    switch(error.code) {
+                        case 'auth/email-already-in-use':
+                            mensagem = 'Este email já está a ser usado.';
+                            break;
+                        case 'auth/invalid-email':
+                            mensagem = 'Email inválido.';
+                            break;
+                        case 'auth/weak-password':
+                            mensagem = 'Palavra-passe muito fraca.';
+                            break;
+                        case 'auth/operation-not-allowed':
+                            mensagem = 'Registo não permitido. Contacte o administrador.';
+                            break;
+                        default:
+                            mensagem = `Erro: ${error.message}`;
+                    }
+                    mostrarErro(mensagem);
+                })
+                .finally(function() {
+                    // Restaurar botão
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                });
+        });
 
-/* openSemana by id (reload doc) */
-async function openSemanaById(semId){
-  try{
-    const snap = await getDoc(doc(db,'turmas',turmaAtiva.id,'semanas',semId));
-    if(!snap.exists()){ alert('Semana não encontrada'); return; }
-    const data = snap.data();
-    openSemana({ id: semId, ...data });
-  }catch(err){ console.error(err); alert('Erro abrir semana'); }
-}
+        // Logout
+        function logout() {
+            if (confirm('Tem a certeza que deseja sair?')) {
+                auth.signOut();
+            }
+        }
 
-/* openSemana wrapper used by list items */
-async function openSemana(semObj){
-  // if semObj.planificacao available, directly render; otherwise fetch exists above (openSemana handles both)
-  if(!semObj.planificacao){
-    await openSemanaById(semObj.id);
-    return;
-  }
-  // else semObj has planificacao already
-  semanaAtiva = { id: semObj.id, inicio: semObj.inicio, fim: semObj.fim, rangeText: semObj.rangeText, horarios: semObj.horarios || HORARIOS, planificacao: semObj.planificacao };
-  tituloSemana.textContent = `Planificação — ${turmaAtiva.nome}`;
-  subtituloSemana.textContent = semObj.rangeText || (semObj.inicio + ' → ' + semObj.fim);
-  fillSelectDays(semObj.inicio, semObj.fim);
-  renderGrid(semObj.inicio, semObj.fim, semObj.planificacao || {});
-  areaPlan.style.display = 'block';
-}
+        // Carregar dados ao iniciar
+        window.onload = function() {
+            // O Firebase irá gerir automaticamente o estado de autenticação
+        };
 
-/* loadSemanas shortcut button */
-btnCarregarSemanas.addEventListener('click', loadSemanas);
+        // Criar turma
+        document.getElementById('btnCriarTurma').addEventListener('click', function() {
+            const nome = document.getElementById('nomeTurma').value.trim();
+            const ano = document.getElementById('anoLetivo').value.trim();
+            const professor = document.getElementById('nomeProfessor').value.trim();
 
-/* ====== Inicial ====== */
-function init(){
-  // nothing else for now
-}
-init();
+            if (!nome || !ano || !professor) {
+                alert('Por favor, preencha todos os campos.');
+                return;
+            }
 
-</script>
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            const novaTurma = {
+                id: Date.now(),
+                nome,
+                ano,
+                professor,
+                semanas: []
+            };
+
+            turmas.push(novaTurma);
+            localStorage.setItem('turmas', JSON.stringify(turmas));
+
+            // Limpar campos
+            document.getElementById('nomeTurma').value = '';
+            document.getElementById('anoLetivo').value = '';
+            document.getElementById('nomeProfessor').value = '';
+
+            carregarTurmas();
+            alert('Turma criada com sucesso!');
+        });
+
+        // Carregar lista de turmas
+        function carregarTurmas() {
+            const lista = document.getElementById('listaTurmas');
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+
+            lista.innerHTML = '';
+
+            if (turmas.length === 0) {
+                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma turma criada</li>';
+                return;
+            }
+
+            turmas.forEach((turma, index) => {
+                const li = document.createElement('li');
+                li.className = 'turma-item';
+                li.innerHTML = `
+                    <div class="turma-info">
+                        <strong>${turma.nome}</strong><br>
+                        <small>${turma.ano} • ${turma.professor}</small>
+                    </div>
+                    <div class="turma-actions">
+                        <button onclick="selecionarTurma(${index})" class="btn-secondary">Selecionar</button>
+                        <button onclick="eliminarTurma(${index})" class="btn-danger">Eliminar</button>
+                    </div>
+                `;
+                lista.appendChild(li);
+            });
+        }
+
+        // Selecionar turma (corrigido)
+        function selecionarTurma(turmaId, nome, ano, professor) {
+            console.log('Selecionando turma:', turmaId, nome, ano, professor); // Debug
+            
+            try {
+                turmaAtiva = {
+                    id: turmaId,
+                    nome: nome,
+                    ano: ano,
+                    professor: professor
+                };
+                
+                console.log('Turma ativa definida:', turmaAtiva); // Debug
+                
+                document.getElementById('cardSemana').style.display = 'block';
+                carregarSemanas();
+                
+                alert(`Turma "${nome}" selecionada!`);
+            } catch (error) {
+                console.error('Erro ao selecionar turma:', error);
+                alert('Erro ao selecionar turma: ' + error.message);
+            }
+        }
+
+        // Eliminar turma (agora com Firebase)
+        async function eliminarTurma(turmaId) {
+            if (!confirm('Tem a certeza que deseja eliminar esta turma? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            try {
+                // Eliminar todas as semanas da turma primeiro
+                const semanasSnapshot = await db.collection('semanas')
+                    .where('turmaId', '==', turmaId)
+                    .get();
+
+                const batch = db.batch();
+                semanasSnapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+
+                // Eliminar a turma
+                batch.delete(db.collection('turmas').doc(turmaId));
+                
+                await batch.commit();
+
+                carregarTurmas();
+
+                // Reset se a turma ativa foi eliminada
+                if (turmaAtiva && turmaAtiva.id === turmaId) {
+                    turmaAtiva = null;
+                    semanaAtiva = null;
+                    document.getElementById('cardSemana').style.display = 'none';
+                    document.getElementById('areaPlanificacao').style.display = 'none';
+                }
+
+                alert('Turma eliminada com sucesso!');
+            } catch (error) {
+                console.error('Erro ao eliminar turma:', error);
+                alert('Erro ao eliminar turma.');
+            }
+        }
+
+        // Criar semana rápida
+        function criarSemanaRapida(tipo) {
+            const hoje = new Date();
+            let startDate, endDate;
+
+            if (tipo === 'esta') {
+                const dayOfWeek = hoje.getDay(); // 0 = Domingo
+                const monday = hoje.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                startDate = new Date(hoje.setDate(monday));
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 4); // Segunda a Sexta
+            } else if (tipo === 'proxima') {
+                const dayOfWeek = hoje.getDay();
+                const monday = hoje.getDate() - dayOfWeek + (dayOfWeek === 0 ? 1 : 8);
+                startDate = new Date(hoje.setDate(monday));
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 4);
+            } else if (tipo === 'custom') {
+                document.getElementById('calendarContainer').style.display = 'block';
+                generateCalendar();
+                return;
+            }
+
+            selectedWeekStart = startDate;
+            selectedWeekEnd = endDate;
+            mostrarSemanaSelcionada();
+        }
+
+        // Gerar calendário
+        function generateCalendar() {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            
+            document.getElementById('calendarTitle').textContent = 
+                new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' })
+                    .format(calendarDate);
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+            const calendarGrid = document.querySelector('.calendar-grid');
+            
+            // Remove dias existentes (mantém cabeçalhos)
+            const existingDays = calendarGrid.querySelectorAll('.calendar-day');
+            existingDays.forEach(day => day.remove());
+
+            // Gerar 42 dias (6 semanas)
+            for (let i = 0; i < 42; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                
+                if (currentDate.getMonth() !== month) {
+                    dayElement.classList.add('other-month');
+                }
+
+                if (isToday(currentDate)) {
+                    dayElement.classList.add('today');
+                }
+
+                dayElement.innerHTML = `
+                    <div class="day-number">${currentDate.getDate()}</div>
+                `;
+
+                dayElement.onclick = () => selectWeek(currentDate);
+                calendarGrid.appendChild(dayElement);
+            }
+        }
+
+        // Verificar se é hoje
+        function isToday(date) {
+            const today = new Date();
+            return date.toDateString() === today.toDateString();
+        }
+
+        // Selecionar semana
+        function selectWeek(clickedDate) {
+            const dayOfWeek = clickedDate.getDay();
+            const monday = new Date(clickedDate);
+            monday.setDate(clickedDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1));
+            
+            const friday = new Date(monday);
+            friday.setDate(monday.getDate() + 4);
+
+            selectedWeekStart = monday;
+            selectedWeekEnd = friday;
+
+            // Atualizar visual do calendário
+            updateCalendarSelection();
+            mostrarSemanaSelcionada();
+        }
+
+        // Atualizar seleção visual do calendário
+        function updateCalendarSelection() {
+            const days = document.querySelectorAll('.calendar-day');
+            days.forEach(day => {
+                day.classList.remove('selected', 'in-range', 'range-start', 'range-end');
+            });
+
+            if (selectedWeekStart && selectedWeekEnd) {
+                days.forEach(day => {
+                    const dayDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 
+                        parseInt(day.querySelector('.day-number').textContent));
+                    
+                    if (dayDate >= selectedWeekStart && dayDate <= selectedWeekEnd) {
+                        day.classList.add('in-range');
+                        if (dayDate.getTime() === selectedWeekStart.getTime()) {
+                            day.classList.add('range-start');
+                        }
+                        if (dayDate.getTime() === selectedWeekEnd.getTime()) {
+                            day.classList.add('range-end');
+                        }
+                    }
+                });
+            }
+        }
+
+        // Mostrar semana selecionada
+        function mostrarSemanaSelcionada() {
+            if (!selectedWeekStart || !selectedWeekEnd) return;
+
+            const startStr = selectedWeekStart.toLocaleDateString('pt-PT');
+            const endStr = selectedWeekEnd.toLocaleDateString('pt-PT');
+            
+            document.getElementById('weekRangeText').textContent = 
+                `${startStr} a ${endStr} (Segunda a Sexta-feira)`;
+            document.getElementById('selectedWeek').style.display = 'block';
+        }
+
+        // Confirmar criação da semana
+        async function confirmarSemana() {
+            if (!turmaAtiva || !selectedWeekStart || !selectedWeekEnd) {
+                alert('Erro: dados incompletos.');
+                return;
+            }
+
+            const startStr = selectedWeekStart.toLocaleDateString('pt-PT');
+            const endStr = selectedWeekEnd.toLocaleDateString('pt-PT');
+            const descricao = `${startStr} a ${endStr}`;
+
+            try {
+                console.log('A criar semana:', descricao, 'para turma:', turmaAtiva.id);
+                
+                await db.collection('semanas').add({
+                    turmaId: turmaAtiva.id,
+                    descricao: descricao,
+                    dataInicio: firebase.firestore.Timestamp.fromDate(selectedWeekStart),
+                    dataFim: firebase.firestore.Timestamp.fromDate(selectedWeekEnd),
+                    criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+                    planificacao: {}
+                });
+
+                // Resetar seleção
+                selectedWeekStart = null;
+                selectedWeekEnd = null;
+                document.getElementById('selectedWeek').style.display = 'none';
+                document.getElementById('calendarContainer').style.display = 'none';
+
+                carregarSemanas();
+                alert('Semana criada com sucesso!');
+            } catch (error) {
+                console.error('Erro ao criar semana:', error);
+                
+                if (error.code === 'permission-denied') {
+                    alert('Erro de permissões. Verifique as regras do Firestore:\n\n' +
+                          '1. Vá ao Firebase Console\n' +
+                          '2. Firestore Database → Rules\n' +
+                          '3. Use regras de teste:\n\n' +
+                          'allow read, write: if request.auth != null;');
+                } else {
+                    alert('Erro ao criar semana: ' + error.message);
+                }
+            }
+        }
+
+        // Navegar meses do calendário
+        function changeMonth(direction) {
+            calendarDate.setMonth(calendarDate.getMonth() + direction);
+            generateCalendar();
+        }
+
+        // Carregar semanas (corrigido)
+        async function carregarSemanas() {
+            const lista = document.getElementById('listaSemanas');
+            
+            if (!turmaAtiva) {
+                lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Selecione uma turma primeiro</li>';
+                return;
+            }
+
+            try {
+                console.log('A carregar semanas para a turma:', turmaAtiva.id); // Debug
+                
+                const snapshot = await db.collection('semanas')
+                    .where('turmaId', '==', turmaAtiva.id)
+                    .orderBy('criadoEm', 'desc')
+                    .get();
+
+                console.log('Semanas encontradas:', snapshot.size); // Debug
+
+                lista.innerHTML = '';
+
+                if (snapshot.empty) {
+                    lista.innerHTML = '<li style="text-align: center; color: #999; font-style: italic;">Nenhuma semana criada</li>';
+                    return;
+                }
+
+                const semanas = [];
+                snapshot.forEach((doc) => {
+                    const semanaData = { id: doc.id, ...doc.data() };
+                    semanas.push(semanaData);
+                    console.log('Semana carregada:', semanaData); // Debug
+                });
+
+                semanas.forEach((semana) => {
+                    const li = document.createElement('li');
+                    li.className = 'semana-item';
+                    li.innerHTML = `
+                        <div>
+                            <strong>${semana.descricao}</strong>
+                        </div>
+                        <div class="semana-actions">
+                            <button onclick="abrirPlanificacao('${semana.id}', '${semana.descricao}')" class="btn-secondary">Abrir</button>
+                            <button onclick="eliminarSemana('${semana.id}')" class="btn-danger">Eliminar</button>
+                        </div>
+                    `;
+                    lista.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar semanas:', error);
+                lista.innerHTML = '<li style="color: red;">Erro ao carregar semanas. Pode precisar criar índice no Firestore.</li>';
+                
+                // Mostrar link para criar índice se necessário
+                if (error.code === 'failed-precondition') {
+                    console.log('Precisa criar um índice no Firestore. Clique no link que apareceu no console.');
+                }
+            }
+        }
+
+        // Abrir planificação (atualizado)
+        function abrirPlanificacao(semanaId, descricao) {
+            if (!turmaAtiva) return;
+
+            semanaAtiva = { id: semanaId, descricao: descricao };
+
+            document.getElementById('tituloAtual').textContent = `Planificação: ${descricao}`;
+            document.getElementById('infoAtual').textContent = `${turmaAtiva.nome} • ${turmaAtiva.ano} • ${turmaAtiva.professor}`;
+            document.getElementById('cabecalhoPlanificacao').textContent = `${turmaAtiva.nome} | ${turmaAtiva.ano} | ${turmaAtiva.professor} | SEMANA: ${descricao}`;
+
+            // Carregar dados salvos
+            carregarDadosPlanificacao();
+
+            document.getElementById('areaPlanificacao').style.display = 'block';
+            mostrarSemanaCompleta();
+
+            // Scroll para a planificação
+            document.getElementById('areaPlanificacao').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Eliminar semana
+        function eliminarSemana(index) {
+            if (!confirm('Tem a certeza que deseja eliminar esta semana? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            const turmas = JSON.parse(localStorage.getItem('turmas') || '[]');
+            turmas[turmaAtiva].semanas.splice(index, 1);
+            localStorage.setItem('turmas', JSON.stringify(turmas));
+
+            carregarSemanas();
+
+            // Reset se a semana ativa foi eliminada
+            if (semanaAtiva === index) {
+                semanaAtiva = null;
+                document.getElementById('areaPlanificacao').style.display = 'none';
+            }
+        }
+
+        // Carregar dados da planificação (atualizado para Firebase)
+        async function carregarDadosPlanificacao() {
+            if (!turmaAtiva || !semanaAtiva) return;
+
+            try {
+                const doc = await db.collection('semanas').doc(semanaAtiva.id).get();
+                if (!doc.exists) return;
+
+                const planificacao = doc.data().planificacao || {};
+
+                // Carregar dados em cada textarea
+                const textareas = document.querySelectorAll('.content-cell textarea');
+                textareas.forEach(textarea => {
+                    const cell = textarea.closest('.content-cell');
+                    const day = cell.getAttribute('data-day');
+                    const time = cell.getAttribute('data-time');
+                    const key = `${day}-${time}`;
+                    
+                    if (planificacao[key]) {
+                        textarea.value = planificacao[key];
+                    } else {
+                        textarea.value = '';
+                    }
+                });
+            } catch (error) {
+                console.error('Erro ao carregar planificação:', error);
+            }
+        }
+
+        // Salvar planificação (atualizado para Firebase)
+        async function salvarPlanificacao() {
+            if (!turmaAtiva || !semanaAtiva) {
+                alert('Selecione uma turma e semana primeiro.');
+                return;
+            }
+
+            try {
+                const planificacao = {};
+
+                // Recolher dados de cada textarea
+                const textareas = document.querySelectorAll('.content-cell textarea');
+                textareas.forEach(textarea => {
+                    const cell = textarea.closest('.content-cell');
+                    const day = cell.getAttribute('data-day');
+                    const time = cell.getAttribute('data-time');
+                    const key = `${day}-${time}`;
+                    
+                    planificacao[key] = textarea.value;
+                });
+
+                await db.collection('semanas').doc(semanaAtiva.id).update({
+                    planificacao: planificacao,
+                    atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert('Planificação guardada com sucesso!');
+            } catch (error) {
+                console.error('Erro ao salvar planificação:', error);
+                alert('Erro ao guardar planificação: ' + error.message);
+            }
+        }
+
+        // Mostrar semana completa
+        function mostrarSemanaCompleta() {
+            const headers = document.querySelectorAll('.day-header');
+            const cells = document.querySelectorAll('.day-cell');
+
+            headers.forEach(header => {
+                header.classList.remove('hidden');
+                header.classList.remove('active-day');
+            });
+
+            cells.forEach(cell => {
+                cell.classList.remove('hidden');
+                cell.classList.remove('active-day');
+            });
+        }
+
+        // Mostrar apenas um dia
+        function mostrarDia(dia) {
+            const headers = document.querySelectorAll('.day-header');
+            const cells = document.querySelectorAll('.day-cell');
+
+            headers.forEach(header => {
+                if (header.getAttribute('data-day') === dia) {
+                    header.classList.remove('hidden');
+                    header.classList.add('active-day');
+                } else {
+                    header.classList.add('hidden');
+                    header.classList.remove('active-day');
+                }
+            });
+
+            cells.forEach(cell => {
+                if (cell.getAttribute('data-day') === dia) {
+                    cell.classList.remove('hidden');
+                    cell.classList.add('active-day');
+                } else {
+                    cell.classList.add('hidden');
+                    cell.classList.remove('active-day');
+                }
+            });
+        }
+
+        // Auto-save ao digitar (atualizado)
+        document.addEventListener('input', function(e) {
+            if (e.target.tagName === 'TEXTAREA' && e.target.closest('.content-cell')) {
+                // Auto-save após 3 segundos de inatividade
+                clearTimeout(e.target.autoSaveTimer);
+                e.target.autoSaveTimer = setTimeout(() => {
+                    salvarPlanificacao();
+                }, 3000);
+            }
+        });
+    </script>
 </body>
 </html>
